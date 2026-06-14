@@ -1,6 +1,6 @@
 flask
 flask-sqlalchemy
 gunicorn
-google-generativeai
+google-genai
 Pillow
 pillow-heif

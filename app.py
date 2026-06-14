@@ -223,9 +223,10 @@ def chart():
 @app.route('/scan_receipt', methods=['POST'])
 @login_required
 def scan_receipt():
-    import google.generativeai as genai
+    from google import genai as google_genai
+    from google.genai import types as genai_types
     from PIL import Image
-    import io, json, re, base64
+    import io, json, re
 
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
@@ -255,18 +256,14 @@ def scan_receipt():
         max_size = 1600
         if max(img.size) > max_size:
             ratio = max_size / max(img.size)
-            new_w = int(img.size[0] * ratio)
-            new_h = int(img.size[1] * ratio)
-            img = img.resize((new_w, new_h), Image.LANCZOS)
+            img = img.resize((int(img.size[0]*ratio), int(img.size[1]*ratio)), Image.LANCZOS)
 
         # Save as JPEG bytes
         buf = io.BytesIO()
         img.save(buf, format='JPEG', quality=85)
         jpeg_bytes = buf.getvalue()
 
-        genai.configure(api_key=api_key)
-        # Use gemini-2.0-flash — faster and more accurate
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        client = google_genai.Client(api_key=api_key)
 
         prompt = (
             "You are a receipt reader. Look at this receipt image carefully.\n"
@@ -280,11 +277,16 @@ def scan_receipt():
             "clothes/shoes→clothing, electricity/water bill→utilities, carwash→carwash, "
             "car repair/parts→carmaint, otherwise→other\n"
             "If you cannot read the amount clearly, use 0.\n"
-            "If the receipt is not in Arabic, still write description in Arabic."
+            "Write description in Arabic."
         )
 
-        img_part = Image.open(io.BytesIO(jpeg_bytes))
-        response = model.generate_content([prompt, img_part])
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=[
+                prompt,
+                genai_types.Part.from_bytes(data=jpeg_bytes, mime_type='image/jpeg')
+            ]
+        )
         text = response.text.strip()
 
         # Remove markdown code blocks if present
