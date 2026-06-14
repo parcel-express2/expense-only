@@ -479,12 +479,19 @@ footer {
     <div class="panel">
       <div class="panel-hdr" style="justify-content:space-between;">
         <span>● إضافة مصروف</span>
-        <button type="button" onclick="document.getElementById('receiptInput').click()"
-          style="display:flex;align-items:center;gap:6px;padding:6px 14px;background:linear-gradient(135deg,#f59e0b,#f97316);border:none;border-radius:10px;color:white;font-family:inherit;font-size:.8rem;font-weight:800;cursor:pointer;">
-          📷 مسح فاتورة
-        </button>
+        <div style="display:flex;gap:8px;">
+          <button type="button" onclick="document.getElementById('receiptCamera').click()"
+            style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#f59e0b,#f97316);border:none;border-radius:10px;color:white;font-family:inherit;font-size:.8rem;font-weight:800;cursor:pointer;">
+            📷 كاميرا
+          </button>
+          <button type="button" onclick="document.getElementById('receiptGallery').click()"
+            style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:white;font-family:inherit;font-size:.8rem;font-weight:800;cursor:pointer;">
+            🖼️ معرض
+          </button>
+        </div>
       </div>
-      <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none" onchange="scanReceipt(this)">
+      <input type="file" id="receiptCamera" accept="image/*" capture="environment" style="display:none" onchange="scanReceipt(this)">
+      <input type="file" id="receiptGallery" accept="image/*" style="display:none" onchange="scanReceipt(this)">
 
       <!-- Scanning indicator -->
       <div id="scanStatus" style="display:none;padding:12px 20px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.2);font-size:.85rem;color:#f59e0b;font-weight:700;text-align:center;">
