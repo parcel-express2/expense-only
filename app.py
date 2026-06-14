@@ -223,10 +223,9 @@ def chart():
 @app.route('/scan_receipt', methods=['POST'])
 @login_required
 def scan_receipt():
-    from google import genai as google_genai
-    from google.genai import types as genai_types
+    import requests as http_requests
     from PIL import Image
-    import io, json, re
+    import io, json, re, base64
 
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
@@ -239,7 +238,7 @@ def scan_receipt():
     img_bytes = file.read()
 
     try:
-        # Try to open image — handle HEIC via pillow-heif if available
+        # Handle HEIC if pillow-heif available
         try:
             import pillow_heif
             pillow_heif.register_heif_opener()
@@ -247,23 +246,17 @@ def scan_receipt():
             pass
 
         img = Image.open(io.BytesIO(img_bytes))
-
-        # Convert any mode to RGB
         if img.mode != 'RGB':
             img = img.convert('RGB')
 
-        # Resize if too large (max 1600px on longest side)
         max_size = 1600
         if max(img.size) > max_size:
             ratio = max_size / max(img.size)
             img = img.resize((int(img.size[0]*ratio), int(img.size[1]*ratio)), Image.LANCZOS)
 
-        # Save as JPEG bytes
         buf = io.BytesIO()
         img.save(buf, format='JPEG', quality=85)
-        jpeg_bytes = buf.getvalue()
-
-        client = google_genai.Client(api_key=api_key)
+        jpeg_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
 
         prompt = (
             "You are a receipt reader. Look at this receipt image carefully.\n"
@@ -275,19 +268,24 @@ def scan_receipt():
             "Category rules: coffee shop/cafe→coffee, gas station/fuel→petrol, restaurant→food, "
             "supermarket/grocery→groceries, pharmacy→pharmacy, hospital/clinic→health, "
             "clothes/shoes→clothing, electricity/water bill→utilities, carwash→carwash, "
-            "car repair/parts→carmaint, otherwise→other\n"
-            "If you cannot read the amount clearly, use 0.\n"
-            "Write description in Arabic."
+            "car repair/parts→carmaint, otherwise→other. "
+            "If amount unclear use 0. Write description in Arabic."
         )
 
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=[
-                prompt,
-                genai_types.Part.from_bytes(data=jpeg_bytes, mime_type='image/jpeg')
-            ]
-        )
-        text = response.text.strip()
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": prompt},
+                    {"inline_data": {"mime_type": "image/jpeg", "data": jpeg_b64}}
+                ]
+            }]
+        }
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        resp = http_requests.post(url, json=payload, timeout=30)
+        resp.raise_for_status()
+        result = resp.json()
+        text = result['candidates'][0]['content']['parts'][0]['text'].strip()
 
         # Remove markdown code blocks if present
         text = re.sub(r'```(?:json)?', '', text).strip()
