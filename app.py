@@ -220,6 +220,62 @@ def chart():
     return jsonify({'labels': labels, 'data': data, 'mode': mode})
 
 
+@app.route('/scan_receipt', methods=['POST'])
+@login_required
+def scan_receipt():
+    import google.generativeai as genai
+    from PIL import Image
+    import io, json, re
+
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'مفتاح Gemini غير موجود'}), 500
+
+    if 'image' not in request.files:
+        return jsonify({'error': 'لم يتم إرسال صورة'}), 400
+
+    file = request.files['image']
+    img_bytes = file.read()
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        img = Image.open(io.BytesIO(img_bytes))
+
+        prompt = """أنت مساعد لقراءة الفواتير. اقرأ هذه الفاتورة واستخرج المعلومات التالية.
+
+أعد الرد بصيغة JSON فقط بدون أي نص إضافي:
+{
+  "amount": <المبلغ الإجمالي كرقم فقط بدون عملة>,
+  "description": "<اسم المحل أو وصف الفاتورة بالعربي>",
+  "category": "<اختر من: food, groceries, coffee, petrol, carwash, carmaint, health, pharmacy, education, entertainment, clothing, utilities, internet, subscriptions, savings, gifts, travel, housing, other>",
+  "date": "<التاريخ بصيغة YYYY-MM-DD إذا موجود وإلا اترك فارغ>"
+}
+
+قواعد:
+- amount: رقم فقط مثل 5.500 أو 12.000
+- إذا كانت القهوة أو مشروبات → coffee
+- إذا كان محطة وقود/بترول → petrol
+- إذا كان مطعم → food
+- إذا كان سوبرماركت/بقالة → groceries
+- إذا لم تستطع قراءة الفاتورة، اكتب amount: 0"""
+
+        response = model.generate_content([prompt, img])
+        text = response.text.strip()
+
+        # extract JSON
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            data = json.loads(match.group())
+        else:
+            data = json.loads(text)
+
+        return jsonify({'success': True, 'data': data})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5051))
     app.run(host='0.0.0.0', debug=True, port=port)

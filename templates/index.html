@@ -477,9 +477,22 @@ footer {
 
     <!-- ADD + LIST -->
     <div class="panel">
-      <div class="panel-hdr">● إضافة مصروف</div>
+      <div class="panel-hdr" style="justify-content:space-between;">
+        <span>● إضافة مصروف</span>
+        <button type="button" onclick="document.getElementById('receiptInput').click()"
+          style="display:flex;align-items:center;gap:6px;padding:6px 14px;background:linear-gradient(135deg,#f59e0b,#f97316);border:none;border-radius:10px;color:white;font-family:inherit;font-size:.8rem;font-weight:800;cursor:pointer;">
+          📷 مسح فاتورة
+        </button>
+      </div>
+      <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none" onchange="scanReceipt(this)">
+
+      <!-- Scanning indicator -->
+      <div id="scanStatus" style="display:none;padding:12px 20px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.2);font-size:.85rem;color:#f59e0b;font-weight:700;text-align:center;">
+        ⏳ جاري قراءة الفاتورة...
+      </div>
+
       <div class="panel-body">
-        <form method="POST" action="/add_expense">
+        <form method="POST" action="/add_expense" id="expenseForm">
           <div class="frow">
             <div class="fg">
               <label>المبلغ (ر.ع)</label>
@@ -678,6 +691,72 @@ async function loadChart(mode) {
 function setMode(mode) { loadChart(mode); }
 
 loadChart('monthly');
+
+async function scanReceipt(input) {
+  if (!input.files || !input.files[0]) return;
+
+  const status = document.getElementById('scanStatus');
+  status.style.display = 'block';
+  status.textContent = '⏳ جاري قراءة الفاتورة...';
+
+  const formData = new FormData();
+  formData.append('image', input.files[0]);
+
+  try {
+    const res  = await fetch('/scan_receipt', { method: 'POST', body: formData });
+    const json = await res.json();
+
+    if (json.success && json.data) {
+      const d = json.data;
+
+      // fill amount
+      if (d.amount && d.amount > 0) {
+        document.querySelector('#expenseForm input[name="amount"]').value = parseFloat(d.amount).toFixed(3);
+      }
+
+      // fill description
+      if (d.description) {
+        document.querySelector('#expenseForm input[name="description"]').value = d.description;
+      }
+
+      // select category
+      if (d.category) {
+        const sel = document.querySelector('#expenseForm select[name="category"]');
+        for (let opt of sel.options) {
+          if (opt.value === d.category) { sel.value = d.category; break; }
+        }
+      }
+
+      // fill date
+      if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        document.querySelector('#expenseForm input[name="date"]').value = d.date;
+      }
+
+      status.style.background = 'rgba(16,185,129,.1)';
+      status.style.color = '#10b981';
+      status.style.borderColor = 'rgba(16,185,129,.2)';
+      status.textContent = '✅ تم قراءة الفاتورة! راجع البيانات واضغط إضافة';
+
+    } else {
+      status.style.background = 'rgba(244,63,94,.1)';
+      status.style.color = '#f43f5e';
+      status.textContent = '❌ لم أستطع قراءة الفاتورة، أدخل البيانات يدوياً';
+    }
+  } catch(e) {
+    status.style.background = 'rgba(244,63,94,.1)';
+    status.style.color = '#f43f5e';
+    status.textContent = '❌ خطأ في الاتصال، حاول مرة أخرى';
+  }
+
+  setTimeout(() => {
+    status.style.display = 'none';
+    status.style.background = 'rgba(245,158,11,.1)';
+    status.style.color = '#f59e0b';
+    status.style.borderColor = 'rgba(245,158,11,.2)';
+  }, 5000);
+
+  input.value = '';
+}
 
 function confirmDel(url, amount) {
   document.getElementById('delBtn').href = url;
