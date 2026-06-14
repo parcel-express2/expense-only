@@ -281,8 +281,13 @@ def scan_receipt():
             }]
         }
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-        resp = http_requests.post(url, json=payload, timeout=30)
+        # Support both AIza... and AQ... key formats
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key
+        }
+        resp = http_requests.post(url, json=payload, headers=headers, timeout=30)
         resp.raise_for_status()
         result = resp.json()
         text = result['candidates'][0]['content']['parts'][0]['text'].strip()
