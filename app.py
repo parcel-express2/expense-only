@@ -226,10 +226,21 @@ def scan_receipt():
     import requests as http_requests
     from PIL import Image
     import io, json, re, base64
+    import subprocess
 
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         return jsonify({'error': 'مفتاح Gemini غير موجود'}), 500
+
+    # Get fresh OAuth token via gcloud
+    try:
+        result = subprocess.run(
+            ['/usr/local/share/google-cloud-sdk/bin/gcloud', 'auth', 'application-default', 'print-access-token'],
+            capture_output=True, text=True, timeout=10
+        )
+        oauth_token = result.stdout.strip()
+    except Exception:
+        oauth_token = None
 
     if 'image' not in request.files:
         return jsonify({'error': 'لم يتم إرسال صورة'}), 400
@@ -281,12 +292,18 @@ def scan_receipt():
             }]
         }
 
-        # Support both AIza... and AQ... key formats
         url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-        headers = {
-            "Content-Type": "application/json",
-            "x-goog-api-key": api_key
-        }
+        # Use OAuth token if available, otherwise try api key
+        if oauth_token:
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {oauth_token}"
+            }
+        else:
+            headers = {
+                "Content-Type": "application/json",
+                "x-goog-api-key": api_key
+            }
         resp = http_requests.post(url, json=payload, headers=headers, timeout=30)
         resp.raise_for_status()
         result = resp.json()
