@@ -292,18 +292,8 @@ def scan_receipt():
             }]
         }
 
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-        # Use OAuth token if available, otherwise try api key
-        if oauth_token:
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {oauth_token}"
-            }
-        else:
-            headers = {
-                "Content-Type": "application/json",
-                "x-goog-api-key": api_key
-            }
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        headers = {"Content-Type": "application/json"}
         resp = http_requests.post(url, json=payload, headers=headers, timeout=30)
         resp.raise_for_status()
         result = resp.json()
