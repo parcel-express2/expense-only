@@ -13,15 +13,24 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 CATEGORIES = [
-    ('housing',       'السكن والإيجار',     '🏠'),
-    ('food',          'الطعام والمشتريات',   '🍔'),
-    ('transport',     'المواصلات',           '🚗'),
+    ('housing',       'السكن والإيجار',      '🏠'),
+    ('food',          'الطعام والمطاعم',     '🍔'),
+    ('groceries',     'البقالة والمشتريات',  '🛒'),
+    ('coffee',        'القهوة والمشروبات',   '☕'),
+    ('petrol',        'البترول والوقود',     '⛽'),
+    ('carwash',       'غسيل السيارة',        '🚿'),
+    ('carmaint',      'صيانة السيارة',       '🔧'),
     ('health',        'الصحة والطب',         '💊'),
+    ('pharmacy',      'الصيدلية',            '💉'),
     ('education',     'التعليم',             '📚'),
-    ('entertainment', 'الترفيه',             '🎬'),
-    ('clothing',      'الملابس',             '👔'),
+    ('entertainment', 'الترفيه والأنشطة',    '🎬'),
+    ('clothing',      'الملابس والأحذية',    '👔'),
     ('utilities',     'الفواتير والخدمات',   '💡'),
+    ('internet',      'الإنترنت والهاتف',    '📱'),
+    ('subscriptions', 'الاشتراكات',          '📺'),
     ('savings',       'الادخار',             '💰'),
+    ('gifts',         'الهدايا',             '🎁'),
+    ('travel',        'السفر والترحال',      '✈️'),
     ('other',         'أخرى',               '📦'),
 ]
 
@@ -180,15 +189,35 @@ def delete_expense(id):
 @login_required
 def chart():
     user_id = session['user_id']
-    year    = request.args.get('year', date.today().year, type=int)
-    labels  = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
-               'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
-    data = []
-    for m in range(1, 13):
-        total = db.session.query(db.func.sum(Expense.amount))\
-                  .filter_by(user_id=user_id, month=m, year=year).scalar() or 0
-        data.append(round(total, 3))
-    return jsonify({'labels': labels, 'data': data})
+    today   = date.today()
+    mode    = request.args.get('mode', 'monthly')   # monthly | daily
+    year    = request.args.get('year',  today.year,  type=int)
+    month   = request.args.get('month', today.month, type=int)
+
+    if mode == 'daily':
+        import calendar
+        days_in_month = calendar.monthrange(year, month)[1]
+        labels = [str(d) for d in range(1, days_in_month + 1)]
+        data = []
+        for d in range(1, days_in_month + 1):
+            try:
+                day_date = date(year, month, d)
+            except ValueError:
+                data.append(0)
+                continue
+            total = db.session.query(db.func.sum(Expense.amount))\
+                      .filter(Expense.user_id == user_id, Expense.date == day_date).scalar() or 0
+            data.append(round(total, 3))
+    else:
+        labels = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
+                  'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
+        data = []
+        for m in range(1, 13):
+            total = db.session.query(db.func.sum(Expense.amount))\
+                      .filter_by(user_id=user_id, month=m, year=year).scalar() or 0
+            data.append(round(total, 3))
+
+    return jsonify({'labels': labels, 'data': data, 'mode': mode})
 
 
 if __name__ == '__main__':

@@ -540,9 +540,21 @@ footer {
     <!-- CHART -->
     <div style="display:flex;flex-direction:column;gap:20px;">
       <div class="chart-panel" style="flex:1;">
-        <div class="chart-hdr">
-          <span class="ch-dot"></span>
-          المصروفات الشهرية — {{ current_year }}
+        <div class="chart-hdr" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="ch-dot"></span>
+            <span id="chartTitle">المصروفات الشهرية — {{ current_year }}</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="setMode('monthly')" id="btnMonthly"
+              style="padding:5px 14px;border-radius:8px;border:none;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#f59e0b,#f43f5e);color:white;">
+              📅 أشهر
+            </button>
+            <button onclick="setMode('daily')" id="btnDaily"
+              style="padding:5px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:var(--surface3);color:var(--muted);">
+              📆 أيام
+            </button>
+          </div>
         </div>
         <canvas id="chart" height="200"></canvas>
       </div>
@@ -589,46 +601,83 @@ footer {
 <footer>تتبع المصروفات — {{ current_year }}</footer>
 
 <script>
-async function loadChart() {
-  const res  = await fetch(`/api/chart?year={{ current_year }}`);
+let myChart = null;
+let currentMode = 'monthly';
+const CURRENT_MONTH = {{ current_month }};
+const CURRENT_YEAR  = {{ current_year }};
+
+async function loadChart(mode) {
+  currentMode = mode || currentMode;
+  const url = `/api/chart?year=${CURRENT_YEAR}&month=${CURRENT_MONTH}&mode=${currentMode}`;
+  const res  = await fetch(url);
   const d    = await res.json();
   const ctx  = document.getElementById('chart').getContext('2d');
-  new Chart(ctx, {
+
+  if (myChart) myChart.destroy();
+
+  const isDaily = currentMode === 'daily';
+  const today = new Date().getDate();
+
+  myChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: d.labels,
       datasets: [{
         label: 'المصروفات (ر.ع)',
         data: d.data,
-        backgroundColor: d.data.map((v,i) =>
-          i+1 === {{ current_month }}
-            ? 'rgba(244,63,94,.9)'
-            : 'rgba(244,63,94,.3)'
-        ),
-        borderRadius: 8,
+        backgroundColor: d.data.map((v, i) => {
+          if (isDaily) {
+            return (i + 1 === today) ? 'rgba(244,63,94,.95)' : 'rgba(244,63,94,.35)';
+          } else {
+            return (i + 1 === CURRENT_MONTH) ? 'rgba(244,63,94,.95)' : 'rgba(244,63,94,.35)';
+          }
+        }),
+        borderRadius: 6,
         borderSkipped: false,
       }]
     },
     options: {
       responsive: true,
       plugins: {
-        legend: { display: false }
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y.toFixed(3)} ر.ع`
+          }
+        }
       },
       scales: {
         x: {
-          ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: 11 } },
+          ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: isDaily ? 9 : 11 }, maxRotation: isDaily ? 45 : 0 },
           grid:  { color: 'rgba(255,255,255,.03)' }
         },
         y: {
           beginAtZero: true,
-          ticks: { color: '#6b7a9e', font: { family: 'Cairo' } },
+          ticks: { color: '#6b7a9e', font: { family: 'Cairo' }, callback: v => v.toFixed(0) },
           grid:  { color: 'rgba(255,255,255,.05)' }
         }
       }
     }
   });
+
+  // update title
+  const arabicMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  document.getElementById('chartTitle').textContent = isDaily
+    ? `مصروفات أيام ${arabicMonths[CURRENT_MONTH-1]} ${CURRENT_YEAR}`
+    : `المصروفات الشهرية — ${CURRENT_YEAR}`;
+
+  // update button styles
+  document.getElementById('btnMonthly').style.background = !isDaily ? 'linear-gradient(135deg,#f59e0b,#f43f5e)' : 'var(--surface3)';
+  document.getElementById('btnMonthly').style.color = !isDaily ? 'white' : 'var(--muted)';
+  document.getElementById('btnMonthly').style.border = !isDaily ? 'none' : '1px solid rgba(255,255,255,.1)';
+  document.getElementById('btnDaily').style.background = isDaily ? 'linear-gradient(135deg,#f59e0b,#f43f5e)' : 'var(--surface3)';
+  document.getElementById('btnDaily').style.color = isDaily ? 'white' : 'var(--muted)';
+  document.getElementById('btnDaily').style.border = isDaily ? 'none' : '1px solid rgba(255,255,255,.1)';
 }
-loadChart();
+
+function setMode(mode) { loadChart(mode); }
+
+loadChart('monthly');
 
 function confirmDel(url, amount) {
   document.getElementById('delBtn').href = url;
