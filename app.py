@@ -226,21 +226,10 @@ def scan_receipt():
     import requests as http_requests
     from PIL import Image
     import io, json, re, base64
-    import subprocess
 
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         return jsonify({'error': 'مفتاح Gemini غير موجود'}), 500
-
-    # Get fresh OAuth token via gcloud
-    try:
-        result = subprocess.run(
-            ['/usr/local/share/google-cloud-sdk/bin/gcloud', 'auth', 'application-default', 'print-access-token'],
-            capture_output=True, text=True, timeout=10
-        )
-        oauth_token = result.stdout.strip()
-    except Exception:
-        oauth_token = None
 
     if 'image' not in request.files:
         return jsonify({'error': 'لم يتم إرسال صورة'}), 400
