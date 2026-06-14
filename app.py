@@ -238,66 +238,53 @@ def scan_receipt():
     img_bytes = file.read()
 
     try:
-        # Convert image to JPEG (handles HEIC, PNG, WEBP, etc.)
+        # Try to open image — handle HEIC via pillow-heif if available
+        try:
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+        except ImportError:
+            pass
+
         img = Image.open(io.BytesIO(img_bytes))
-        # Convert RGBA or P mode to RGB first
-        if img.mode in ('RGBA', 'P', 'LA'):
+
+        # Convert any mode to RGB
+        if img.mode != 'RGB':
             img = img.convert('RGB')
-        elif img.mode != 'RGB':
-            img = img.convert('RGB')
-        # Resize if too large (max 2000px on longest side)
-        max_size = 2000
+
+        # Resize if too large (max 1600px on longest side)
+        max_size = 1600
         if max(img.size) > max_size:
             ratio = max_size / max(img.size)
-            new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
-            img = img.resize(new_size, Image.LANCZOS)
-        # Save as JPEG
+            new_w = int(img.size[0] * ratio)
+            new_h = int(img.size[1] * ratio)
+            img = img.resize((new_w, new_h), Image.LANCZOS)
+
+        # Save as JPEG bytes
         buf = io.BytesIO()
-        img.save(buf, format='JPEG', quality=90)
+        img.save(buf, format='JPEG', quality=85)
         jpeg_bytes = buf.getvalue()
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Use gemini-2.0-flash — faster and more accurate
+        model = genai.GenerativeModel('gemini-2.0-flash')
 
-        prompt = """أنت مساعد خبير في قراءة الفواتير والإيصالات.
-اقرأ هذه الفاتورة بدقة واستخرج المعلومات التالية.
+        prompt = (
+            "You are a receipt reader. Look at this receipt image carefully.\n"
+            "Reply with ONLY a raw JSON object, no markdown, no explanation:\n"
+            '{"amount": <total amount as number>, '
+            '"description": "<store name or description in Arabic>", '
+            '"category": "<one of: food, groceries, coffee, petrol, carwash, carmaint, health, pharmacy, education, entertainment, clothing, utilities, internet, subscriptions, savings, gifts, travel, housing, other>", '
+            '"date": "<date as YYYY-MM-DD or empty string>"}\n\n'
+            "Category rules: coffee shop/cafe→coffee, gas station/fuel→petrol, restaurant→food, "
+            "supermarket/grocery→groceries, pharmacy→pharmacy, hospital/clinic→health, "
+            "clothes/shoes→clothing, electricity/water bill→utilities, carwash→carwash, "
+            "car repair/parts→carmaint, otherwise→other\n"
+            "If you cannot read the amount clearly, use 0.\n"
+            "If the receipt is not in Arabic, still write description in Arabic."
+        )
 
-أعد الرد بصيغة JSON فقط بدون أي نص إضافي أو markdown:
-{
-  "amount": <المبلغ الإجمالي كرقم فقط بدون عملة>,
-  "description": "<اسم المحل أو وصف الفاتورة بالعربي>",
-  "category": "<اختر واحدة فقط: food, groceries, coffee, petrol, carwash, carmaint, health, pharmacy, education, entertainment, clothing, utilities, internet, subscriptions, savings, gifts, travel, housing, other>",
-  "date": "<التاريخ بصيغة YYYY-MM-DD إذا موجود وإلا اترك فارغ>"
-}
-
-قواعد التصنيف:
-- قهوة / مشروبات / كافيه → coffee
-- محطة وقود / بترول / غاز → petrol
-- مطعم / وجبات → food
-- سوبرماركت / بقالة / لولو / كارفور / غنيم → groceries
-- صيدلية / دواء → pharmacy
-- مستشفى / عيادة → health
-- ملابس / أحذية → clothing
-- فاتورة كهرباء / ماء / غاز → utilities
-- غسيل سيارة → carwash
-- صيانة سيارة / قطع غيار → carmaint
-- غير واضح أو لا ينتمي لأي فئة → other
-
-تعليمات:
-- amount: رقم عشري مثل 5.500 أو 12.000 (المبلغ الكلي/الإجمالي)
-- إذا ظهر مبلغان، خذ الأكبر (الإجمالي)
-- لا تضع علامة العملة في amount
-- إذا لم تستطع قراءة المبلغ بوضوح، اكتب 0"""
-
-        # Send as inline data
-        image_part = {
-            'inline_data': {
-                'mime_type': 'image/jpeg',
-                'data': base64.b64encode(jpeg_bytes).decode('utf-8')
-            }
-        }
-
-        response = model.generate_content([prompt, image_part])
+        img_part = Image.open(io.BytesIO(jpeg_bytes))
+        response = model.generate_content([prompt, img_part])
         text = response.text.strip()
 
         # Remove markdown code blocks if present

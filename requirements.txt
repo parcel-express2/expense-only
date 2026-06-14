@@ -3,3 +3,4 @@ flask-sqlalchemy
 gunicorn
 google-generativeai
 Pillow
+pillow-heif
