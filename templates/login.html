@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دخول — تتبع المصروفات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Cairo', sans-serif;
+  background: #0a0c14;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  position: relative; overflow: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; top: -150px; right: -150px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(244,63,94,.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed; bottom: -150px; left: -150px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(245,158,11,.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.card {
+  background: #12151f;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 24px;
+  padding: 44px 38px;
+  width: 100%; max-width: 380px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+  position: relative; z-index: 1;
+}
+.top { text-align: center; margin-bottom: 30px; }
+.logo {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, #f59e0b, #f43f5e);
+  border-radius: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(244,63,94,.3);
+}
+h1 { font-size: 1.35rem; font-weight: 900; color: #eef0f8; margin-bottom: 4px; }
+.sub { font-size: .82rem; color: #6b7a9e; }
+.fg { margin-bottom: 15px; }
+.fg label { display: block; font-size: .76rem; font-weight: 700; color: #6b7a9e; margin-bottom: 5px; text-align: right; }
+.fg input {
+  width: 100%; padding: 11px 14px;
+  background: #181c2a; border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px; color: #eef0f8;
+  font-size: .92rem; font-family: inherit;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+  text-align: right;
+}
+.fg input[type="password"] { text-align: center; letter-spacing: 6px; font-size: 1.1rem; }
+.fg input::placeholder { color: #2d3450; letter-spacing: 0; }
+.fg input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,.1); }
+.hint { font-size: .7rem; color: #2d3450; margin-top: 4px; text-align: center; }
+.btn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, #f59e0b, #f43f5e);
+  color: white; border: none; border-radius: 12px;
+  font-size: .92rem; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+  transition: opacity .2s, transform .1s; margin-top: 4px;
+}
+.btn:hover { opacity: .85; }
+.btn:active { transform: scale(.98); }
+.div {
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0; color: #2d3450; font-size: .78rem;
+}
+.div::before, .div::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.05); }
+.link {
+  display: block; padding: 11px;
+  border: 1px solid rgba(255,255,255,.06); border-radius: 12px;
+  color: #f59e0b; font-weight: 700; font-size: .88rem;
+  text-decoration: none; text-align: center;
+  transition: background .15s;
+}
+.link:hover { background: rgba(245,158,11,.07); }
+.flash { padding: 10px 14px; border-radius: 10px; font-size: .82rem; font-weight: 600; margin-bottom: 14px; border: 1px solid; }
+.flash.error { background: rgba(244,63,94,.1); color: #f43f5e; border-color: rgba(244,63,94,.2); }
+.flash.success { background: rgba(16,185,129,.1); color: #10b981; border-color: rgba(16,185,129,.2); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top">
+    <div class="logo">💸</div>
+    <h1>تتبع المصروفات</h1>
+    <div class="sub">سجّل دخولك لتبدأ</div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for cat, msg in messages %}
+      <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <form method="POST">
+    <div class="fg">
+      <label>الاسم</label>
+      <input type="text" name="name" placeholder="اكتب اسمك" required autocomplete="off">
+    </div>
+    <div class="fg">
+      <label>رمز PIN</label>
+      <input type="password" name="pin" placeholder="••••" maxlength="4" pattern="[0-9]{4}" required inputmode="numeric">
+      <div class="hint">4 أرقام فقط</div>
+    </div>
+    <button type="submit" class="btn">دخول ←</button>
+  </form>
+
+  <div class="div">أو</div>
+  <a href="/register" class="link">+ إنشاء حساب جديد</a>
+</div>
+</body>
+</html>
