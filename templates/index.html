@@ -715,39 +715,50 @@ async function scanReceipt(input) {
 
     if (json.success && json.data) {
       const d = json.data;
+      let filled = 0;
 
       // fill amount
-      if (d.amount && d.amount > 0) {
+      if (d.amount && parseFloat(d.amount) > 0) {
         document.querySelector('#expenseForm input[name="amount"]').value = parseFloat(d.amount).toFixed(3);
+        filled++;
       }
 
       // fill description
       if (d.description) {
         document.querySelector('#expenseForm input[name="description"]').value = d.description;
+        filled++;
       }
 
       // select category
       if (d.category) {
         const sel = document.querySelector('#expenseForm select[name="category"]');
         for (let opt of sel.options) {
-          if (opt.value === d.category) { sel.value = d.category; break; }
+          if (opt.value === d.category) { sel.value = d.category; filled++; break; }
         }
       }
 
       // fill date
       if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
         document.querySelector('#expenseForm input[name="date"]').value = d.date;
+        filled++;
       }
 
-      status.style.background = 'rgba(16,185,129,.1)';
-      status.style.color = '#10b981';
-      status.style.borderColor = 'rgba(16,185,129,.2)';
-      status.textContent = '✅ تم قراءة الفاتورة! راجع البيانات واضغط إضافة';
+      if (filled > 0) {
+        status.style.background = 'rgba(16,185,129,.1)';
+        status.style.color = '#10b981';
+        status.style.borderColor = 'rgba(16,185,129,.2)';
+        status.textContent = '✅ تم قراءة الفاتورة! راجع البيانات واضغط إضافة';
+      } else {
+        status.style.background = 'rgba(245,158,11,.1)';
+        status.style.color = '#f59e0b';
+        status.style.borderColor = 'rgba(245,158,11,.2)';
+        status.textContent = '⚠️ الفاتورة غير واضحة، أدخل البيانات يدوياً';
+      }
 
     } else {
       status.style.background = 'rgba(244,63,94,.1)';
       status.style.color = '#f43f5e';
-      status.textContent = '❌ لم أستطع قراءة الفاتورة، أدخل البيانات يدوياً';
+      status.textContent = '❌ ' + (json.error || 'لم أستطع قراءة الفاتورة، أدخل البيانات يدوياً');
     }
   } catch(e) {
     status.style.background = 'rgba(244,63,94,.1)';

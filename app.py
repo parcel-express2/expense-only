@@ -225,7 +225,7 @@ def chart():
 def scan_receipt():
     import google.generativeai as genai
     from PIL import Image
-    import io, json, re
+    import io, json, re, base64
 
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
@@ -238,42 +238,88 @@ def scan_receipt():
     img_bytes = file.read()
 
     try:
+        # Convert image to JPEG (handles HEIC, PNG, WEBP, etc.)
+        img = Image.open(io.BytesIO(img_bytes))
+        # Convert RGBA or P mode to RGB first
+        if img.mode in ('RGBA', 'P', 'LA'):
+            img = img.convert('RGB')
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        # Resize if too large (max 2000px on longest side)
+        max_size = 2000
+        if max(img.size) > max_size:
+            ratio = max_size / max(img.size)
+            new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+            img = img.resize(new_size, Image.LANCZOS)
+        # Save as JPEG
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=90)
+        jpeg_bytes = buf.getvalue()
+
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
-        img = Image.open(io.BytesIO(img_bytes))
 
-        prompt = """أنت مساعد لقراءة الفواتير. اقرأ هذه الفاتورة واستخرج المعلومات التالية.
+        prompt = """أنت مساعد خبير في قراءة الفواتير والإيصالات.
+اقرأ هذه الفاتورة بدقة واستخرج المعلومات التالية.
 
-أعد الرد بصيغة JSON فقط بدون أي نص إضافي:
+أعد الرد بصيغة JSON فقط بدون أي نص إضافي أو markdown:
 {
   "amount": <المبلغ الإجمالي كرقم فقط بدون عملة>,
   "description": "<اسم المحل أو وصف الفاتورة بالعربي>",
-  "category": "<اختر من: food, groceries, coffee, petrol, carwash, carmaint, health, pharmacy, education, entertainment, clothing, utilities, internet, subscriptions, savings, gifts, travel, housing, other>",
+  "category": "<اختر واحدة فقط: food, groceries, coffee, petrol, carwash, carmaint, health, pharmacy, education, entertainment, clothing, utilities, internet, subscriptions, savings, gifts, travel, housing, other>",
   "date": "<التاريخ بصيغة YYYY-MM-DD إذا موجود وإلا اترك فارغ>"
 }
 
-قواعد:
-- amount: رقم فقط مثل 5.500 أو 12.000
-- إذا كانت القهوة أو مشروبات → coffee
-- إذا كان محطة وقود/بترول → petrol
-- إذا كان مطعم → food
-- إذا كان سوبرماركت/بقالة → groceries
-- إذا لم تستطع قراءة الفاتورة، اكتب amount: 0"""
+قواعد التصنيف:
+- قهوة / مشروبات / كافيه → coffee
+- محطة وقود / بترول / غاز → petrol
+- مطعم / وجبات → food
+- سوبرماركت / بقالة / لولو / كارفور / غنيم → groceries
+- صيدلية / دواء → pharmacy
+- مستشفى / عيادة → health
+- ملابس / أحذية → clothing
+- فاتورة كهرباء / ماء / غاز → utilities
+- غسيل سيارة → carwash
+- صيانة سيارة / قطع غيار → carmaint
+- غير واضح أو لا ينتمي لأي فئة → other
 
-        response = model.generate_content([prompt, img])
+تعليمات:
+- amount: رقم عشري مثل 5.500 أو 12.000 (المبلغ الكلي/الإجمالي)
+- إذا ظهر مبلغان، خذ الأكبر (الإجمالي)
+- لا تضع علامة العملة في amount
+- إذا لم تستطع قراءة المبلغ بوضوح، اكتب 0"""
+
+        # Send as inline data
+        image_part = {
+            'inline_data': {
+                'mime_type': 'image/jpeg',
+                'data': base64.b64encode(jpeg_bytes).decode('utf-8')
+            }
+        }
+
+        response = model.generate_content([prompt, image_part])
         text = response.text.strip()
 
-        # extract JSON
+        # Remove markdown code blocks if present
+        text = re.sub(r'```(?:json)?', '', text).strip()
+
+        # Extract JSON
         match = re.search(r'\{.*\}', text, re.DOTALL)
         if match:
             data = json.loads(match.group())
         else:
             data = json.loads(text)
 
+        # Ensure amount is a number
+        try:
+            data['amount'] = float(str(data.get('amount', 0)).replace(',', '.'))
+        except Exception:
+            data['amount'] = 0
+
         return jsonify({'success': True, 'data': data})
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'detail': 'scan_failed'}), 500
 
 
 if __name__ == '__main__':
