@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session, send_file
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,7 +7,12 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'expense-only-secret-2024'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///expenses.db'
+
+# PostgreSQL on Railway, SQLite locally
+db_url = os.environ.get('DATABASE_URL', '')
+if db_url.startswith('postgres://'):
+    db_url = db_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///expenses.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -41,6 +46,7 @@ class User(db.Model):
     pin_hash   = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expenses   = db.relationship('Expense', backref='user', lazy=True, cascade='all, delete-orphan')
+    budgets    = db.relationship('Budget', backref='user', lazy=True, cascade='all, delete-orphan')
 
 
 class Expense(db.Model):
@@ -58,6 +64,14 @@ class Expense(db.Model):
         if self.date:
             self.month = self.date.month
             self.year  = self.date.year
+
+
+class Budget(db.Model):
+    id      = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    month   = db.Column(db.Integer, nullable=False)
+    year    = db.Column(db.Integer, nullable=False)
+    amount  = db.Column(db.Float, nullable=False)
 
 
 with app.app_context():
@@ -130,13 +144,38 @@ def index():
     today   = date.today()
     month   = request.args.get('month', today.month, type=int)
     year    = request.args.get('year',  today.year,  type=int)
+    search  = request.args.get('q', '').strip()
 
-    expenses = Expense.query.filter_by(user_id=user_id, month=month, year=year).all()
+    query = Expense.query.filter_by(user_id=user_id, month=month, year=year)
+    if search:
+        query = query.filter(
+            db.or_(
+                Expense.description.ilike(f'%{search}%'),
+                Expense.category.ilike(f'%{search}%')
+            )
+        )
+    expenses = query.all()
     total    = sum(e.amount for e in expenses)
 
+    # all expenses this month (without search filter) for stats
+    all_expenses = Expense.query.filter_by(user_id=user_id, month=month, year=year).all()
+    all_total    = sum(e.amount for e in all_expenses)
+
     by_cat = {}
-    for e in expenses:
+    for e in all_expenses:
         by_cat[e.category] = by_cat.get(e.category, 0) + e.amount
+
+    # budget
+    budget = Budget.query.filter_by(user_id=user_id, month=month, year=year).first()
+    budget_amount = budget.amount if budget else None
+    budget_pct    = round(all_total / budget_amount * 100, 1) if budget_amount else None
+
+    # prev month comparison
+    prev_month = month - 1 if month > 1 else 12
+    prev_year  = year if month > 1 else year - 1
+    prev_total = db.session.query(db.func.sum(Expense.amount))\
+                   .filter_by(user_id=user_id, month=prev_month, year=prev_year).scalar() or 0
+    diff_pct = round((all_total - prev_total) / prev_total * 100, 1) if prev_total > 0 else None
 
     arabic_months = {
         1:'يناير',2:'فبراير',3:'مارس',4:'أبريل',
@@ -148,6 +187,7 @@ def index():
     return render_template('index.html',
         expenses=expenses,
         total=total,
+        all_total=all_total,
         by_cat=by_cat,
         categories=CATEGORIES,
         current_month=month,
@@ -156,6 +196,12 @@ def index():
         arabic_months=arabic_months,
         get_cat=get_cat,
         user_name=session.get('user_name'),
+        search=search,
+        budget_amount=budget_amount,
+        budget_pct=budget_pct,
+        diff_pct=diff_pct,
+        prev_month=prev_month,
+        prev_total=prev_total,
     )
 
 
@@ -174,6 +220,22 @@ def add_expense():
     return redirect(url_for('index', month=entry_date.month, year=entry_date.year))
 
 
+@app.route('/edit_expense/<int:id>', methods=['POST'])
+@login_required
+def edit_expense(id):
+    e = Expense.query.filter_by(id=id, user_id=session['user_id']).first_or_404()
+    e.amount      = float(request.form['amount'])
+    e.category    = request.form['category']
+    e.description = request.form.get('description', '')
+    entry_date    = datetime.strptime(request.form['date'], '%Y-%m-%d').date()
+    e.date  = entry_date
+    e.month = entry_date.month
+    e.year  = entry_date.year
+    db.session.commit()
+    flash('تم التعديل ✅', 'success')
+    return redirect(url_for('index', month=e.month, year=e.year))
+
+
 @app.route('/delete_expense/<int:id>')
 @login_required
 def delete_expense(id):
@@ -185,12 +247,89 @@ def delete_expense(id):
     return redirect(url_for('index', month=month, year=year))
 
 
+@app.route('/set_budget', methods=['POST'])
+@login_required
+def set_budget():
+    month  = int(request.form['month'])
+    year   = int(request.form['year'])
+    amount = float(request.form['budget_amount'])
+    budget = Budget.query.filter_by(user_id=session['user_id'], month=month, year=year).first()
+    if budget:
+        budget.amount = amount
+    else:
+        budget = Budget(user_id=session['user_id'], month=month, year=year, amount=amount)
+        db.session.add(budget)
+    db.session.commit()
+    flash('تم حفظ الميزانية ✅', 'success')
+    return redirect(url_for('index', month=month, year=year))
+
+
+@app.route('/export_excel')
+@login_required
+def export_excel():
+    import io
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+    except ImportError:
+        flash('مكتبة التصدير غير متاحة', 'error')
+        return redirect(url_for('index'))
+
+    user_id = session['user_id']
+    today   = date.today()
+    month   = request.args.get('month', today.month, type=int)
+    year    = request.args.get('year',  today.year,  type=int)
+
+    expenses = Expense.query.filter_by(user_id=user_id, month=month, year=year)\
+                            .order_by(Expense.date).all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    arabic_months = {1:'يناير',2:'فبراير',3:'مارس',4:'أبريل',5:'مايو',6:'يونيو',
+                     7:'يوليو',8:'أغسطس',9:'سبتمبر',10:'أكتوبر',11:'نوفمبر',12:'ديسمبر'}
+    ws.title = f"{arabic_months[month]} {year}"
+
+    # Header
+    headers = ['التاريخ', 'الفئة', 'الوصف', 'المبلغ (ر.ع)']
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill('solid', fgColor='C0392B')
+        cell.alignment = Alignment(horizontal='center')
+
+    for row, e in enumerate(expenses, 2):
+        cat = get_cat(e.category)
+        ws.cell(row=row, column=1, value=str(e.date))
+        ws.cell(row=row, column=2, value=f"{cat[2]} {cat[1]}")
+        ws.cell(row=row, column=3, value=e.description or '')
+        ws.cell(row=row, column=4, value=round(e.amount, 3))
+
+    # Total row
+    total_row = len(expenses) + 2
+    ws.cell(row=total_row, column=3, value='الإجمالي').font = Font(bold=True)
+    total_cell = ws.cell(row=total_row, column=4, value=round(sum(e.amount for e in expenses), 3))
+    total_cell.font = Font(bold=True, color='C0392B')
+
+    # Column widths
+    ws.column_dimensions['A'].width = 14
+    ws.column_dimensions['B'].width = 22
+    ws.column_dimensions['C'].width = 30
+    ws.column_dimensions['D'].width = 16
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    filename = f"مصروفات_{arabic_months[month]}_{year}.xlsx"
+    return send_file(buf, as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
 @app.route('/api/chart')
 @login_required
 def chart():
     user_id = session['user_id']
     today   = date.today()
-    mode    = request.args.get('mode', 'monthly')   # monthly | daily
+    mode    = request.args.get('mode', 'monthly')
     year    = request.args.get('year',  today.year,  type=int)
     month   = request.args.get('month', today.month, type=int)
 
@@ -238,7 +377,6 @@ def scan_receipt():
     img_bytes = file.read()
 
     try:
-        # Handle HEIC if pillow-heif available
         try:
             import pillow_heif
             pillow_heif.register_heif_opener()
@@ -272,15 +410,6 @@ def scan_receipt():
             "If amount unclear use 0. Write description in Arabic."
         )
 
-        payload = {
-            "contents": [{
-                "parts": [
-                    {"text": prompt},
-                    {"inline_data": {"mime_type": "image/jpeg", "data": jpeg_b64}}
-                ]
-            }]
-        }
-
         url = "https://api.mistral.ai/v1/chat/completions"
         headers = {
             "Content-Type": "application/json",
@@ -302,17 +431,13 @@ def scan_receipt():
         result = resp.json()
         text = result['choices'][0]['message']['content'].strip()
 
-        # Remove markdown code blocks if present
         text = re.sub(r'```(?:json)?', '', text).strip()
-
-        # Extract JSON
         match = re.search(r'\{.*\}', text, re.DOTALL)
         if match:
             data = json.loads(match.group())
         else:
             data = json.loads(text)
 
-        # Ensure amount is a number
         try:
             data['amount'] = float(str(data.get('amount', 0)).replace(',', '.'))
         except Exception:

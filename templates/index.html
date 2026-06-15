@@ -17,31 +17,26 @@
   --muted: #6b7a9e;
   --accent: #f59e0b;
   --accent-dim: rgba(245,158,11,.12);
+  --green: #10b981;
+  --green-dim: rgba(16,185,129,.1);
   --red: #f43f5e;
   --red-dim: rgba(244,63,94,.1);
   --red-soft: rgba(244,63,94,.2);
+  --blue: #6366f1;
+  --blue-dim: rgba(99,102,241,.1);
   --radius: 20px;
   --radius-sm: 14px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Cairo', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-}
+body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-/* ── HEADER ── */
+/* HEADER */
 header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
 }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-icon {
@@ -57,342 +52,189 @@ header {
 .hdr-right { display: flex; align-items: center; gap: 10px; }
 .user-chip {
   display: flex; align-items: center; gap: 6px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 5px 14px;
-  font-size: .8rem;
-  font-weight: 700;
-  color: var(--muted);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 999px; padding: 5px 14px;
+  font-size: .8rem; font-weight: 700; color: var(--muted);
 }
-.dot-online {
-  width: 7px; height: 7px;
-  background: #10b981;
-  border-radius: 50%;
-  box-shadow: 0 0 6px #10b981;
-}
+.dot-online { width: 7px; height: 7px; background: #10b981; border-radius: 50%; box-shadow: 0 0 6px #10b981; }
 .btn-out {
-  padding: 6px 14px;
-  background: var(--red-dim);
-  border: 1px solid var(--red-soft);
-  color: var(--red);
-  border-radius: 999px;
-  font-size: .78rem;
-  font-weight: 700;
-  text-decoration: none;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background .2s;
+  padding: 6px 14px; background: var(--red-dim); border: 1px solid var(--red-soft);
+  color: var(--red); border-radius: 999px; font-size: .78rem; font-weight: 700;
+  text-decoration: none; font-family: inherit; cursor: pointer; transition: background .2s;
 }
 .btn-out:hover { background: rgba(244,63,94,.18); }
 
-/* ── MONTH BAR ── */
+/* MONTH BAR */
 .month-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 10px 24px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 10px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .month-bar label { font-size: .8rem; color: var(--muted); font-weight: 700; }
-.month-bar select {
-  padding: 6px 12px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: .82rem;
-  font-family: inherit;
-  outline: none;
-  cursor: pointer;
+.month-bar select, .search-input {
+  padding: 6px 12px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-size: .82rem; font-family: inherit; outline: none; cursor: pointer;
 }
-.month-bar select:focus { border-color: var(--accent); }
+.month-bar select:focus, .search-input:focus { border-color: var(--accent); }
+.search-input { width: 180px; cursor: text; }
+.search-input::placeholder { color: var(--muted); }
 .btn-view {
-  padding: 6px 20px;
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: .82rem;
-  font-weight: 800;
-  cursor: pointer;
-  font-family: inherit;
-  transition: opacity .2s;
+  padding: 6px 20px; background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: white; border: none; border-radius: 10px;
+  font-size: .82rem; font-weight: 800; cursor: pointer; font-family: inherit;
 }
-.btn-view:hover { opacity: .85; }
+.btn-export {
+  padding: 6px 14px; background: var(--green-dim); border: 1px solid rgba(16,185,129,.2);
+  color: var(--green); border-radius: 10px; font-size: .8rem; font-weight: 700;
+  text-decoration: none; font-family: inherit; white-space: nowrap;
+}
 
-/* ── FLASH ── */
+/* FLASH */
 .flash-wrap { padding: 12px 24px 0; }
-.flash {
-  padding: 10px 16px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: .85rem;
-  margin-bottom: 8px;
-  border: 1px solid;
-}
+.flash { padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: .85rem; margin-bottom: 8px; border: 1px solid; }
 .flash.success { background: rgba(16,185,129,.1); color: #10b981; border-color: rgba(16,185,129,.2); }
 .flash.info    { background: rgba(99,102,241,.1);  color: #818cf8; border-color: rgba(99,102,241,.2); }
-.flash.error   { background: var(--red-dim);        color: var(--red); border-color: var(--red-soft); }
+.flash.error   { background: var(--red-dim); color: var(--red); border-color: var(--red-soft); }
 
-/* ── CONTAINER ── */
+/* CONTAINER */
 .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 24px; }
 
-/* ── TOTAL CARD ── */
-.total-card {
-  background: linear-gradient(135deg, #1e1224 0%, #1a1535 50%, #121830 100%);
-  border: 1px solid rgba(244,63,94,.2);
-  border-radius: var(--radius);
-  padding: 28px 32px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  position: relative;
-  overflow: hidden;
-}
-.total-card::before {
-  content: '';
-  position: absolute;
-  top: -80px; left: -80px;
-  width: 240px; height: 240px;
-  background: radial-gradient(circle, rgba(244,63,94,.12) 0%, transparent 70%);
-}
-.total-label { font-size: .82rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
-.total-value { font-size: 2.4rem; font-weight: 900; color: var(--red); line-height: 1; }
-.total-cur   { font-size: 1rem; opacity: .6; margin-right: 6px; }
-.total-month { font-size: .85rem; color: var(--muted); margin-top: 4px; }
-.total-icon  { font-size: 3.5rem; opacity: .15; position: absolute; left: 24px; top: 50%; transform: translateY(-50%); }
+/* STATS ROW */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+@media(max-width:700px){ .stats-row { grid-template-columns: 1fr 1fr; } }
+@media(max-width:460px){ .stats-row { grid-template-columns: 1fr; } }
 
-/* ── CAT PILLS ── */
-.cat-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 18px 20px;
+  position: relative; overflow: hidden;
 }
+.stat-label { font-size: .72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.stat-value { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+.stat-sub   { font-size: .72rem; color: var(--muted); margin-top: 5px; }
+.stat-icon  { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 2rem; opacity: .1; }
+
+/* BUDGET BAR */
+.budget-bar-wrap { margin-top: 10px; }
+.budget-bar-track { height: 6px; background: var(--surface3); border-radius: 6px; overflow: hidden; }
+.budget-bar-fill  { height: 100%; border-radius: 6px; transition: width .6s; }
+
+/* CATEGORY PILLS */
+.cat-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
 .cat-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 5px 14px;
-  font-size: .8rem;
-  font-weight: 700;
-  color: var(--muted);
-  transition: border-color .2s;
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 999px; padding: 5px 14px;
+  font-size: .8rem; font-weight: 700; color: var(--muted);
 }
-.cat-pill:hover { border-color: rgba(244,63,94,.3); }
 .cat-pill .pill-amount { color: var(--red); }
 
-/* ── MAIN GRID ── */
-.main-grid {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 20px;
-  margin-bottom: 20px;
-}
+/* MAIN GRID */
+.main-grid { display: grid; grid-template-columns: 380px 1fr; gap: 20px; margin-bottom: 20px; }
 @media(max-width:860px){ .main-grid { grid-template-columns: 1fr; } }
 
-/* ── PANEL ── */
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
+/* PANEL */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .panel-hdr {
-  padding: 16px 20px;
-  font-size: .9rem;
-  font-weight: 800;
+  padding: 16px 20px; font-size: .9rem; font-weight: 800;
   border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--red);
+  display: flex; align-items: center; gap: 8px; color: var(--red);
 }
 .panel-body { padding: 20px; }
 
-/* ── FORM ── */
+/* FORM */
 .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 @media(max-width:500px){ .frow { grid-template-columns: 1fr; } }
 .fg { display: flex; flex-direction: column; gap: 4px; }
 .fg label { font-size: .75rem; font-weight: 700; color: var(--muted); }
 .fg input, .fg select {
-  padding: 10px 12px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: .85rem;
-  font-family: inherit;
-  outline: none;
-  transition: border-color .2s;
+  padding: 10px 12px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-size: .85rem; font-family: inherit; outline: none; transition: border-color .2s;
 }
-.fg input:focus, .fg select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(245,158,11,.1);
-}
+.fg input:focus, .fg select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,158,11,.1); }
 .fg input::placeholder { color: #2d3450; }
 .btn-add {
-  width: 100%;
-  padding: 12px;
+  width: 100%; padding: 12px;
   background: linear-gradient(135deg, #f43f5e, #e11d48);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: .9rem;
-  font-weight: 900;
-  cursor: pointer;
-  font-family: inherit;
-  margin-top: 6px;
-  transition: opacity .2s, transform .1s;
-  letter-spacing: .02em;
+  color: white; border: none; border-radius: 12px;
+  font-size: .9rem; font-weight: 900; cursor: pointer; font-family: inherit;
+  margin-top: 6px; transition: opacity .2s, transform .1s; letter-spacing: .02em;
 }
 .btn-add:hover  { opacity: .85; }
 .btn-add:active { transform: scale(.98); }
 
-/* ── TX LIST ── */
+/* TX LIST */
 .divider { height: 1px; background: var(--border); margin: 18px 0; }
-.tx-list {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  max-height: 380px;
-  overflow-y: auto;
-}
+.tx-list { display: flex; flex-direction: column; gap: 7px; max-height: 420px; overflow-y: auto; }
 .tx-list::-webkit-scrollbar { width: 4px; }
 .tx-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .tx {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 13px;
-  border-radius: 12px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  transition: border-color .15s;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 13px; border-radius: 12px;
+  background: var(--surface2); border: 1px solid var(--border); transition: border-color .15s;
 }
 .tx:hover { border-color: rgba(244,63,94,.25); }
 .tx-l { display: flex; align-items: center; gap: 10px; }
-.tx-ico {
-  width: 36px; height: 36px;
-  background: var(--red-dim);
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.05rem;
-  flex-shrink: 0;
-}
+.tx-ico { width: 36px; height: 36px; background: var(--red-dim); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; }
 .tx-name { font-weight: 700; font-size: .85rem; }
 .tx-date { font-size: .7rem; color: var(--muted); margin-top: 2px; }
-.tx-r { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.tx-r { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .tx-amt { font-weight: 900; font-size: .95rem; color: var(--red); }
 .btn-del {
-  background: none; border: none;
-  color: var(--muted); cursor: pointer;
-  padding: 5px 7px; border-radius: 8px;
-  font-size: .85rem;
-  transition: color .15s, background .15s;
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  padding: 5px 7px; border-radius: 8px; font-size: .85rem; transition: color .15s, background .15s;
 }
 .btn-del:hover { color: var(--red); background: var(--red-dim); }
-
-.empty {
-  text-align: center;
-  padding: 36px 20px;
-  color: var(--muted);
+.btn-edit {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  padding: 5px 7px; border-radius: 8px; font-size: .85rem; transition: color .15s, background .15s;
 }
+.btn-edit:hover { color: var(--accent); background: var(--accent-dim); }
+
+.empty { text-align: center; padding: 36px 20px; color: var(--muted); }
 .empty-ico { font-size: 2rem; opacity: .4; margin-bottom: 8px; }
 .empty-txt { font-size: .83rem; }
 
-/* ── CHART ── */
-.chart-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 22px;
-  margin-bottom: 20px;
-}
-.chart-hdr {
-  font-size: .9rem;
-  font-weight: 800;
-  margin-bottom: 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ch-dot {
-  width: 8px; height: 8px;
-  background: linear-gradient(135deg, #f59e0b, #f43f5e);
-  border-radius: 50%;
-}
+/* CHART */
+.chart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; }
+.chart-hdr { font-size: .9rem; font-weight: 800; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.ch-dot { width: 8px; height: 8px; background: linear-gradient(135deg, #f59e0b, #f43f5e); border-radius: 50%; }
 
-/* ── MODAL ── */
+/* MODAL */
 .modal-ov {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.75);
-  backdrop-filter: blur(8px);
-  z-index: 999;
-  align-items: center;
-  justify-content: center;
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
+  z-index: 999; align-items: center; justify-content: center;
 }
 .modal-ov.on { display: flex; }
 .modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 32px 28px;
-  max-width: 360px;
-  width: 90%;
-  text-align: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 28px 24px;
+  max-width: 420px; width: 94%;
   box-shadow: 0 24px 80px rgba(0,0,0,.6);
 }
-.modal h3 { font-size: 1.05rem; font-weight: 900; margin: 12px 0 8px; }
-.modal p  { color: var(--muted); font-size: .85rem; margin-bottom: 22px; line-height: 1.6; }
-.modal-btns { display: flex; gap: 10px; justify-content: center; }
+.modal h3 { font-size: 1rem; font-weight: 900; margin-bottom: 16px; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 .btn-cancel {
-  padding: 9px 22px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface2);
-  color: var(--text);
-  font-family: inherit;
-  font-size: .85rem;
-  font-weight: 700;
-  cursor: pointer;
+  padding: 9px 22px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface2); color: var(--text); font-family: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
 }
 .btn-confirm {
-  padding: 9px 22px;
-  background: var(--red);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: .85rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
+  padding: 9px 22px; background: var(--red); color: white; border: none;
+  border-radius: 10px; font-family: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; text-decoration: none;
+}
+.btn-save {
+  padding: 9px 22px; background: linear-gradient(135deg,#f59e0b,#f97316); color: white; border: none;
+  border-radius: 10px; font-family: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
 }
 
-footer {
-  text-align: center;
-  padding: 18px;
-  color: var(--muted);
-  font-size: .73rem;
-  border-top: 1px solid var(--border);
-}
+footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73rem; border-top: 1px solid var(--border); }
 
 @media(max-width:600px){
   header { padding: 12px 16px; }
   .wrap { padding: 14px 16px; }
-  .total-value { font-size: 1.8rem; }
 }
 </style>
 </head>
@@ -408,10 +250,7 @@ footer {
     </div>
   </div>
   <div class="hdr-right">
-    <div class="user-chip">
-      <span class="dot-online"></span>
-      {{ user_name }}
-    </div>
+    <div class="user-chip"><span class="dot-online"></span>{{ user_name }}</div>
     <a href="/logout" class="btn-out">خروج</a>
   </div>
 </header>
@@ -419,7 +258,7 @@ footer {
 <!-- MONTH BAR -->
 <form method="GET" action="/">
   <div class="month-bar">
-    <label>📅 الشهر</label>
+    <label>📅</label>
     <select name="month">
       {% for num, name in [(1,'يناير'),(2,'فبراير'),(3,'مارس'),(4,'أبريل'),(5,'مايو'),(6,'يونيو'),(7,'يوليو'),(8,'أغسطس'),(9,'سبتمبر'),(10,'أكتوبر'),(11,'نوفمبر'),(12,'ديسمبر')] %}
         <option value="{{ num }}" {% if num == current_month %}selected{% endif %}>{{ name }}</option>
@@ -430,7 +269,9 @@ footer {
         <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
       {% endfor %}
     </select>
+    <input class="search-input" type="text" name="q" placeholder="🔍 بحث..." value="{{ search }}">
     <button type="submit" class="btn-view">عرض</button>
+    <a href="/export_excel?month={{ current_month }}&year={{ current_year }}" class="btn-export">⬇️ Excel</a>
   </div>
 </form>
 
@@ -447,16 +288,47 @@ footer {
 
 <div class="wrap">
 
-  <!-- TOTAL CARD -->
-  <div class="total-card">
-    <div style="position:relative;z-index:1;">
-      <div class="total-label">إجمالي مصروفات الشهر</div>
-      <div class="total-value">
-        {{ "%.3f"|format(total) }}<span class="total-cur">ر.ع</span>
-      </div>
-      <div class="total-month">{{ arabic_months[current_month] }} {{ current_year }}</div>
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <!-- Total -->
+    <div class="stat-card" style="border-color:rgba(244,63,94,.2);background:linear-gradient(135deg,#1e1224,#121830);">
+      <div class="stat-label">إجمالي الشهر</div>
+      <div class="stat-value" style="color:var(--red);">{{ "%.3f"|format(all_total) }} <small style="font-size:.9rem;opacity:.6;">ر.ع</small></div>
+      <div class="stat-sub">{{ arabic_months[current_month] }} {{ current_year }}</div>
+      <div class="stat-icon">💸</div>
     </div>
-    <div class="total-icon">💸</div>
+
+    <!-- Budget -->
+    <div class="stat-card" style="border-color:rgba(245,158,11,.2);">
+      <div class="stat-label">الميزانية</div>
+      {% if budget_amount %}
+        <div class="stat-value" style="color:var(--accent);">{{ "%.3f"|format(budget_amount) }} <small style="font-size:.9rem;opacity:.6;">ر.ع</small></div>
+        <div class="budget-bar-wrap">
+          <div class="budget-bar-track">
+            <div class="budget-bar-fill" style="width:{{ [budget_pct,100]|min }}%;background:{% if budget_pct >= 90 %}var(--red){% elif budget_pct >= 70 %}#f59e0b{% else %}var(--green){% endif %};"></div>
+          </div>
+          <div class="stat-sub" style="margin-top:4px;">{{ budget_pct }}% مستهلك{% if budget_pct >= 90 %} ⚠️{% endif %}</div>
+        </div>
+      {% else %}
+        <div class="stat-value" style="color:var(--muted);font-size:1rem;">غير محدد</div>
+        <div class="stat-sub"><button onclick="openBudget()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:inherit;font-size:.78rem;font-weight:700;">+ تحديد ميزانية</button></div>
+      {% endif %}
+      <div class="stat-icon">🎯</div>
+    </div>
+
+    <!-- Comparison -->
+    <div class="stat-card" style="border-color:rgba(99,102,241,.2);">
+      <div class="stat-label">مقارنة بالشهر السابق</div>
+      {% if diff_pct is not none %}
+        <div class="stat-value" style="color:{% if diff_pct > 0 %}var(--red){% else %}var(--green){% endif %};">
+          {{ '+' if diff_pct > 0 else '' }}{{ diff_pct }}%
+        </div>
+        <div class="stat-sub">الشهر السابق: {{ "%.3f"|format(prev_total) }} ر.ع</div>
+      {% else %}
+        <div class="stat-value" style="color:var(--muted);font-size:1rem;">لا توجد بيانات</div>
+      {% endif %}
+      <div class="stat-icon">📊</div>
+    </div>
   </div>
 
   <!-- CATEGORY PILLS -->
@@ -464,10 +336,7 @@ footer {
   <div class="cat-summary">
     {% for key, amount in by_cat.items()|sort(attribute='1', reverse=True) %}
       {% set cat = get_cat(key) %}
-      <div class="cat-pill">
-        {{ cat[2] }} {{ cat[1] }}
-        <span class="pill-amount">{{ "%.3f"|format(amount) }}</span>
-      </div>
+      <div class="cat-pill">{{ cat[2] }} {{ cat[1] }}<span class="pill-amount">{{ "%.3f"|format(amount) }}</span></div>
     {% endfor %}
   </div>
   {% endif %}
@@ -493,7 +362,6 @@ footer {
       <input type="file" id="receiptCamera" accept="image/*" capture="environment" style="display:none" onchange="scanReceipt(this)">
       <input type="file" id="receiptGallery" accept="image/*" style="display:none" onchange="scanReceipt(this)">
 
-      <!-- Scanning indicator -->
       <div id="scanStatus" style="display:none;padding:12px 20px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.2);font-size:.85rem;color:#f59e0b;font-weight:700;text-align:center;">
         ⏳ جاري قراءة الفاتورة...
       </div>
@@ -543,6 +411,7 @@ footer {
                 </div>
                 <div class="tx-r">
                   <span class="tx-amt">{{ "%.3f"|format(e.amount) }}</span>
+                  <button class="btn-edit" onclick="openEdit({{ e.id }}, {{ e.amount }}, '{{ e.category }}', '{{ e.description or '' }}', '{{ e.date }}')">✏️</button>
                   <button class="btn-del" onclick="confirmDel('/delete_expense/{{ e.id }}', '{{ "%.3f"|format(e.amount) }} ر.ع')">🗑</button>
                 </div>
               </div>
@@ -551,13 +420,13 @@ footer {
         {% else %}
           <div class="empty">
             <div class="empty-ico">🛍️</div>
-            <div class="empty-txt">لا يوجد مصروفات لهذا الشهر</div>
+            <div class="empty-txt">{% if search %}لا نتائج لـ "{{ search }}"{% else %}لا يوجد مصروفات لهذا الشهر{% endif %}</div>
           </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- CHART -->
+    <!-- CHART + STATS -->
     <div style="display:flex;flex-direction:column;gap:20px;">
       <div class="chart-panel" style="flex:1;">
         <div class="chart-hdr" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -579,14 +448,13 @@ footer {
         <canvas id="chart" height="200"></canvas>
       </div>
 
-      <!-- TOP CATEGORIES -->
       {% if by_cat %}
       <div class="panel" style="padding:20px;">
         <div style="font-size:.85rem;font-weight:800;color:var(--accent);margin-bottom:14px;">📊 توزيع المصروفات</div>
         {% set sorted_cats = by_cat.items()|list|sort(attribute='1', reverse=True) %}
         {% for key, amount in sorted_cats %}
           {% set cat = get_cat(key) %}
-          {% set pct = (amount / total * 100)|round(1) if total > 0 else 0 %}
+          {% set pct = (amount / all_total * 100)|round(1) if all_total > 0 else 0 %}
           <div style="margin-bottom:12px;">
             <div style="display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;margin-bottom:5px;">
               <span>{{ cat[2] }} {{ cat[1] }}</span>
@@ -600,21 +468,72 @@ footer {
         {% endfor %}
       </div>
       {% endif %}
+
+      <!-- SET BUDGET MINI -->
+      <div class="panel" style="padding:20px;">
+        <div style="font-size:.85rem;font-weight:800;color:var(--accent);margin-bottom:14px;">🎯 تحديد ميزانية الشهر</div>
+        <form method="POST" action="/set_budget" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <input type="hidden" name="month" value="{{ current_month }}">
+          <input type="hidden" name="year"  value="{{ current_year }}">
+          <div class="fg" style="flex:1;min-width:120px;">
+            <label>الميزانية (ر.ع)</label>
+            <input type="number" name="budget_amount" step="0.001" min="1" placeholder="{{ '%.3f'|format(budget_amount) if budget_amount else '0.000' }}" required>
+          </div>
+          <button type="submit" class="btn-save" style="white-space:nowrap;">حفظ</button>
+        </form>
+      </div>
     </div>
 
   </div>
 </div>
 
-<!-- MODAL -->
+<!-- DELETE MODAL -->
 <div class="modal-ov" id="delModal">
   <div class="modal">
-    <div style="font-size:2.5rem;">🗑️</div>
+    <div style="font-size:2rem;margin-bottom:8px;">🗑️</div>
     <h3>تأكيد الحذف</h3>
-    <p id="delTxt">هل تريد حذف هذا المصروف؟</p>
+    <p id="delTxt" style="color:var(--muted);font-size:.85rem;margin-bottom:20px;"></p>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeDel()">إلغاء</button>
       <a id="delBtn" class="btn-confirm">حذف</a>
     </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-ov" id="editModal">
+  <div class="modal">
+    <h3>✏️ تعديل المصروف</h3>
+    <form method="POST" id="editForm">
+      <div class="frow">
+        <div class="fg">
+          <label>المبلغ (ر.ع)</label>
+          <input type="number" name="amount" id="editAmount" step="0.001" min="0.001" required>
+        </div>
+        <div class="fg">
+          <label>الفئة</label>
+          <select name="category" id="editCategory">
+            {% for key, label, icon in categories %}
+              <option value="{{ key }}">{{ icon }} {{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>التاريخ</label>
+          <input type="date" name="date" id="editDate" required>
+        </div>
+        <div class="fg">
+          <label>ملاحظة</label>
+          <input type="text" name="description" id="editDesc" placeholder="اختياري...">
+        </div>
+      </div>
+      <div class="modal-btns">
+        <button type="button" class="btn-cancel" onclick="closeEdit()">إلغاء</button>
+        <button type="submit" class="btn-save">حفظ التعديل</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -632,12 +551,9 @@ async function loadChart(mode) {
   const res  = await fetch(url);
   const d    = await res.json();
   const ctx  = document.getElementById('chart').getContext('2d');
-
   if (myChart) myChart.destroy();
-
   const isDaily = currentMode === 'daily';
   const today = new Date().getDate();
-
   myChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -646,147 +562,88 @@ async function loadChart(mode) {
         label: 'المصروفات (ر.ع)',
         data: d.data,
         backgroundColor: d.data.map((v, i) => {
-          if (isDaily) {
-            return (i + 1 === today) ? 'rgba(244,63,94,.95)' : 'rgba(244,63,94,.35)';
-          } else {
-            return (i + 1 === CURRENT_MONTH) ? 'rgba(244,63,94,.95)' : 'rgba(244,63,94,.35)';
-          }
+          if (isDaily) return (i + 1 === today) ? 'rgba(244,63,94,.95)' : 'rgba(244,63,94,.35)';
+          else return (i + 1 === CURRENT_MONTH) ? 'rgba(244,63,94,.95)' : 'rgba(244,63,94,.35)';
         }),
-        borderRadius: 6,
-        borderSkipped: false,
+        borderRadius: 6, borderSkipped: false,
       }]
     },
     options: {
       responsive: true,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.parsed.y.toFixed(3)} ر.ع`
-          }
-        }
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(3)} ر.ع` } }
       },
       scales: {
-        x: {
-          ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: isDaily ? 9 : 11 }, maxRotation: isDaily ? 45 : 0 },
-          grid:  { color: 'rgba(255,255,255,.03)' }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { color: '#6b7a9e', font: { family: 'Cairo' }, callback: v => v.toFixed(0) },
-          grid:  { color: 'rgba(255,255,255,.05)' }
-        }
+        x: { ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: isDaily ? 9 : 11 }, maxRotation: isDaily ? 45 : 0 }, grid: { color: 'rgba(255,255,255,.03)' } },
+        y: { beginAtZero: true, ticks: { color: '#6b7a9e', font: { family: 'Cairo' }, callback: v => v.toFixed(0) }, grid: { color: 'rgba(255,255,255,.05)' } }
       }
     }
   });
-
-  // update title
   const arabicMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
   document.getElementById('chartTitle').textContent = isDaily
     ? `مصروفات أيام ${arabicMonths[CURRENT_MONTH-1]} ${CURRENT_YEAR}`
     : `المصروفات الشهرية — ${CURRENT_YEAR}`;
-
-  // update button styles
-  document.getElementById('btnMonthly').style.background = !isDaily ? 'linear-gradient(135deg,#f59e0b,#f43f5e)' : 'var(--surface3)';
-  document.getElementById('btnMonthly').style.color = !isDaily ? 'white' : 'var(--muted)';
-  document.getElementById('btnMonthly').style.border = !isDaily ? 'none' : '1px solid rgba(255,255,255,.1)';
-  document.getElementById('btnDaily').style.background = isDaily ? 'linear-gradient(135deg,#f59e0b,#f43f5e)' : 'var(--surface3)';
-  document.getElementById('btnDaily').style.color = isDaily ? 'white' : 'var(--muted)';
-  document.getElementById('btnDaily').style.border = isDaily ? 'none' : '1px solid rgba(255,255,255,.1)';
+  document.getElementById('btnMonthly').style.cssText = !isDaily ? 'padding:5px 14px;border-radius:8px;border:none;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#f59e0b,#f43f5e);color:white;' : 'padding:5px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:var(--surface3);color:var(--muted);';
+  document.getElementById('btnDaily').style.cssText = isDaily ? 'padding:5px 14px;border-radius:8px;border:none;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#f59e0b,#f43f5e);color:white;' : 'padding:5px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:var(--surface3);color:var(--muted);';
 }
-
 function setMode(mode) { loadChart(mode); }
-
 loadChart('monthly');
 
+// SCAN
 async function scanReceipt(input) {
   if (!input.files || !input.files[0]) return;
-
   const status = document.getElementById('scanStatus');
-  status.style.display = 'block';
+  status.style.cssText = 'display:block;padding:12px 20px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.2);font-size:.85rem;color:#f59e0b;font-weight:700;text-align:center;';
   status.textContent = '⏳ جاري قراءة الفاتورة...';
-
   const formData = new FormData();
   formData.append('image', input.files[0]);
-
   try {
     const res  = await fetch('/scan_receipt', { method: 'POST', body: formData });
     const json = await res.json();
-
     if (json.success && json.data) {
-      const d = json.data;
-      let filled = 0;
-
-      // fill amount
-      if (d.amount && parseFloat(d.amount) > 0) {
-        document.querySelector('#expenseForm input[name="amount"]').value = parseFloat(d.amount).toFixed(3);
-        filled++;
-      }
-
-      // fill description
-      if (d.description) {
-        document.querySelector('#expenseForm input[name="description"]').value = d.description;
-        filled++;
-      }
-
-      // select category
-      if (d.category) {
-        const sel = document.querySelector('#expenseForm select[name="category"]');
-        for (let opt of sel.options) {
-          if (opt.value === d.category) { sel.value = d.category; filled++; break; }
-        }
-      }
-
-      // fill date
-      if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        document.querySelector('#expenseForm input[name="date"]').value = d.date;
-        filled++;
-      }
-
-      if (filled > 0) {
-        status.style.background = 'rgba(16,185,129,.1)';
-        status.style.color = '#10b981';
-        status.style.borderColor = 'rgba(16,185,129,.2)';
-        status.textContent = '✅ تم قراءة الفاتورة! راجع البيانات واضغط إضافة';
-      } else {
-        status.style.background = 'rgba(245,158,11,.1)';
-        status.style.color = '#f59e0b';
-        status.style.borderColor = 'rgba(245,158,11,.2)';
-        status.textContent = '⚠️ الفاتورة غير واضحة، أدخل البيانات يدوياً';
-      }
-
+      const d = json.data; let filled = 0;
+      if (d.amount && parseFloat(d.amount) > 0) { document.querySelector('#expenseForm input[name="amount"]').value = parseFloat(d.amount).toFixed(3); filled++; }
+      if (d.description) { document.querySelector('#expenseForm input[name="description"]').value = d.description; filled++; }
+      if (d.category) { const sel = document.querySelector('#expenseForm select[name="category"]'); for (let opt of sel.options) { if (opt.value === d.category) { sel.value = d.category; filled++; break; } } }
+      if (d.date && d.date.match(/^\d{4}-\d{2}-\d{2}$/)) { document.querySelector('#expenseForm input[name="date"]').value = d.date; filled++; }
+      if (filled > 0) { status.style.background='rgba(16,185,129,.1)'; status.style.color='#10b981'; status.textContent='✅ تم قراءة الفاتورة! راجع البيانات واضغط إضافة'; }
+      else { status.style.background='rgba(245,158,11,.1)'; status.style.color='#f59e0b'; status.textContent='⚠️ الفاتورة غير واضحة، أدخل البيانات يدوياً'; }
     } else {
-      status.style.background = 'rgba(244,63,94,.1)';
-      status.style.color = '#f43f5e';
-      status.textContent = '❌ ' + (json.error || 'لم أستطع قراءة الفاتورة، أدخل البيانات يدوياً');
+      status.style.background='rgba(244,63,94,.1)'; status.style.color='#f43f5e';
+      status.textContent='❌ ' + (json.error || 'لم أستطع قراءة الفاتورة');
     }
-  } catch(e) {
-    status.style.background = 'rgba(244,63,94,.1)';
-    status.style.color = '#f43f5e';
-    status.textContent = '❌ خطأ في الاتصال، حاول مرة أخرى';
-  }
-
-  setTimeout(() => {
-    status.style.display = 'none';
-    status.style.background = 'rgba(245,158,11,.1)';
-    status.style.color = '#f59e0b';
-    status.style.borderColor = 'rgba(245,158,11,.2)';
-  }, 5000);
-
+  } catch(e) { status.style.background='rgba(244,63,94,.1)'; status.style.color='#f43f5e'; status.textContent='❌ خطأ في الاتصال'; }
+  setTimeout(() => { status.style.display='none'; }, 6000);
   input.value = '';
 }
 
+// DELETE
 function confirmDel(url, amount) {
   document.getElementById('delBtn').href = url;
   document.getElementById('delTxt').textContent = `حذف مصروف بقيمة ${amount}؟`;
   document.getElementById('delModal').classList.add('on');
 }
-function closeDel() {
-  document.getElementById('delModal').classList.remove('on');
+function closeDel() { document.getElementById('delModal').classList.remove('on'); }
+document.getElementById('delModal').addEventListener('click', e => { if (e.target === document.getElementById('delModal')) closeDel(); });
+
+// EDIT
+function openEdit(id, amount, category, description, date) {
+  document.getElementById('editForm').action = `/edit_expense/${id}`;
+  document.getElementById('editAmount').value = parseFloat(amount).toFixed(3);
+  document.getElementById('editCategory').value = category;
+  document.getElementById('editDesc').value = description;
+  document.getElementById('editDate').value = date;
+  document.getElementById('editModal').classList.add('on');
 }
-document.getElementById('delModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('delModal')) closeDel();
-});
+function closeEdit() { document.getElementById('editModal').classList.remove('on'); }
+document.getElementById('editModal').addEventListener('click', e => { if (e.target === document.getElementById('editModal')) closeEdit(); });
+
+// BUDGET
+function openBudget() {
+  document.querySelector('input[name="budget_amount"]').focus();
+  document.querySelector('input[name="budget_amount"]').scrollIntoView({behavior:'smooth'});
+}
 </script>
 </body>
 </html>
