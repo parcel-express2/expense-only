@@ -227,9 +227,9 @@ def scan_receipt():
     from PIL import Image
     import io, json, re, base64
 
-    api_key = os.environ.get('GEMINI_API_KEY')
+    api_key = os.environ.get('MISTRAL_API_KEY') or os.environ.get('GEMINI_API_KEY')
     if not api_key:
-        return jsonify({'error': 'مفتاح Gemini غير موجود'}), 500
+        return jsonify({'error': 'مفتاح AI غير موجود'}), 500
 
     if 'image' not in request.files:
         return jsonify({'error': 'لم يتم إرسال صورة'}), 400
@@ -281,12 +281,26 @@ def scan_receipt():
             }]
         }
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-        headers = {"Content-Type": "application/json"}
-        resp = http_requests.post(url, json=payload, headers=headers, timeout=30)
+        url = "https://api.mistral.ai/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        mistral_payload = {
+            "model": "pixtral-12b-2409",
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": f"data:image/jpeg;base64,{jpeg_b64}"}
+                ]
+            }],
+            "max_tokens": 300
+        }
+        resp = http_requests.post(url, json=mistral_payload, headers=headers, timeout=30)
         resp.raise_for_status()
         result = resp.json()
-        text = result['candidates'][0]['content']['parts'][0]['text'].strip()
+        text = result['choices'][0]['message']['content'].strip()
 
         # Remove markdown code blocks if present
         text = re.sub(r'```(?:json)?', '', text).strip()
