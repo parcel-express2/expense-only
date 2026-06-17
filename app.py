@@ -450,6 +450,22 @@ def scan_receipt():
         return jsonify({'error': str(e), 'detail': 'scan_failed'}), 500
 
 
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    user = User.query.get(session['user_id'])
+    if request.method == 'POST':
+        phone = request.form.get('phone', '').strip()
+        # تنسيق الرقم بشكل صحيح
+        if phone and not phone.startswith('+'):
+            phone = '+' + phone
+        user.phone = phone
+        db.session.commit()
+        flash('تم حفظ الإعدادات ✅', 'success')
+        return redirect(url_for('settings'))
+    return render_template('settings.html', user=user)
+
+
 @app.route('/sms_webhook', methods=['POST'])
 def sms_webhook():
     """استقبال SMS من Twilio وتسجيل المصروف تلقائياً"""

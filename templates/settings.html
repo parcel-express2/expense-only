@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الإعدادات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c14; --surface: #12151f; --surface2: #181c2a;
+  --border: rgba(255,255,255,.06); --text: #eef0f8; --muted: #6b7a9e;
+  --accent: #f59e0b; --red: #f43f5e; --green: #10b981;
+  --radius: 20px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon { width: 40px; height: 40px; background: linear-gradient(135deg,#f59e0b,#f43f5e); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+.brand-name { font-size: 1rem; font-weight: 900; }
+.btn-back { padding: 6px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 999px; font-size: .8rem; font-weight: 700; text-decoration: none; font-family: inherit; }
+
+.wrap { max-width: 600px; margin: 0 auto; padding: 30px 24px; }
+
+.flash-wrap { padding: 12px 24px 0; max-width: 600px; margin: 0 auto; }
+.flash { padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: .85rem; margin-bottom: 8px; border: 1px solid; }
+.flash.success { background: rgba(16,185,129,.1); color: #10b981; border-color: rgba(16,185,129,.2); }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; }
+.card-title { font-size: 1rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+
+.fg { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.fg label { font-size: .78rem; font-weight: 700; color: var(--muted); }
+.fg input {
+  padding: 11px 14px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; color: var(--text); font-size: .9rem; font-family: inherit; outline: none;
+}
+.fg input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,158,11,.1); }
+.fg input::placeholder { color: #2d3450; }
+.hint { font-size: .75rem; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+.btn-save {
+  width: 100%; padding: 12px; background: linear-gradient(135deg,#f59e0b,#f97316);
+  color: white; border: none; border-radius: 12px;
+  font-size: .9rem; font-weight: 900; cursor: pointer; font-family: inherit;
+}
+
+.info-box {
+  background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.2);
+  border-radius: 14px; padding: 16px 18px; margin-top: 20px;
+}
+.info-box h4 { font-size: .85rem; font-weight: 800; color: #818cf8; margin-bottom: 10px; }
+.info-box p  { font-size: .8rem; color: var(--muted); line-height: 1.7; }
+.info-box code { background: var(--surface2); padding: 2px 8px; border-radius: 6px; color: var(--accent); font-size: .82rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">⚙️</div>
+    <div><div class="brand-name">الإعدادات</div></div>
+  </div>
+  <a href="/" class="btn-back">← الرئيسية</a>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-wrap">
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="wrap">
+
+  <div class="card">
+    <div class="card-title">📱 ربط رسائل البنك (SMS)</div>
+    <form method="POST">
+      <div class="fg">
+        <label>رقم هاتفك (مع رمز الدولة)</label>
+        <input type="text" name="phone" placeholder="+96891234567" value="{{ user.phone or '' }}">
+        <div class="hint">
+          مثال للعُمان: <code>+96891234567</code><br>
+          هذا الرقم سيُستخدم للتعرف عليك عند إعادة توجيه رسائل البنك.
+        </div>
+      </div>
+      <button type="submit" class="btn-save">💾 حفظ</button>
+    </form>
+
+    <div class="info-box">
+      <h4>📖 كيف يعمل؟</h4>
+      <p>
+        ١. أضف رقم هاتفك أعلاه واحفظ<br>
+        ٢. عند وصول رسالة من البنك، أعد توجيهها إلى:<br>
+        <code>+1 908 733 8889</code><br>
+        ٣. سيتم تسجيل المصروف تلقائياً في حسابك ✅
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👤 معلومات الحساب</div>
+    <div class="fg">
+      <label>اسم المستخدم</label>
+      <input type="text" value="{{ user.name }}" disabled style="opacity:.5;cursor:not-allowed;">
+    </div>
+    <div class="fg">
+      <label>تاريخ الإنشاء</label>
+      <input type="text" value="{{ user.created_at.strftime('%Y/%m/%d') }}" disabled style="opacity:.5;cursor:not-allowed;">
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
