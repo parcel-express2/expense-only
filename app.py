@@ -44,7 +44,6 @@ class User(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     name       = db.Column(db.String(100), nullable=False, unique=True)
     pin_hash   = db.Column(db.String(200), nullable=False)
-    phone      = db.Column(db.String(20))  # رقم الهاتف لاستقبال SMS
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expenses   = db.relationship('Expense', backref='user', lazy=True, cascade='all, delete-orphan')
     budgets    = db.relationship('Budget', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -450,96 +449,6 @@ def scan_receipt():
         return jsonify({'error': str(e), 'detail': 'scan_failed'}), 500
 
 
-@app.route('/settings', methods=['GET', 'POST'])
-@login_required
-def settings():
-    user = User.query.get(session['user_id'])
-    if request.method == 'POST':
-        phone = request.form.get('phone', '').strip()
-        # تنسيق الرقم بشكل صحيح
-        if phone and not phone.startswith('+'):
-            phone = '+' + phone
-        user.phone = phone
-        db.session.commit()
-        flash('تم حفظ الإعدادات ✅', 'success')
-        return redirect(url_for('settings'))
-    return render_template('settings.html', user=user)
-
-
-@app.route('/sms_webhook', methods=['POST'])
-def sms_webhook():
-    """استقبال SMS من Twilio وتسجيل المصروف تلقائياً"""
-    import re
-    from twilio.request_validator import RequestValidator
-
-    # التحقق من أن الطلب من Twilio
-    auth_token = os.environ.get('TWILIO_AUTH_TOKEN', '')
-    validator = RequestValidator(auth_token)
-    url = request.url
-    params = request.form
-    signature = request.headers.get('X-Twilio-Signature', '')
-    if auth_token and not validator.validate(url, params, signature):
-        return 'Forbidden', 403
-
-    body = request.form.get('Body', '').strip()
-    from_number = request.form.get('From', '')
-
-    # البحث عن المستخدم برقم الهاتف
-    user = User.query.filter_by(phone=from_number).first()
-    if not user:
-        # الرد بطلب التسجيل
-        return '''<?xml version="1.0" encoding="UTF-8"?>
-<Response><Message>رقمك غير مسجل. سجّل دخولك عبر التطبيق وأضف رقم هاتفك في الإعدادات.</Message></Response>''', 200, {'Content-Type': 'text/xml'}
-
-    # تحليل نص البنك
-    amount = None
-    description = ''
-    category = 'other'
-
-    # أنماط شائعة لرسائل البنوك العُمانية
-    patterns = [
-        r'(?:تم الخصم|خصم|مدين|debit|debited)[^\d]*(\d+[\.,]\d+)',
-        r'(\d+[\.,]\d+)\s*(?:ر\.ع|OMR|ريال)',
-        r'(?:amount|مبلغ)[^\d]*(\d+[\.,]\d+)',
-    ]
-    for pat in patterns:
-        m = re.search(pat, body, re.IGNORECASE)
-        if m:
-            try:
-                amount = float(m.group(1).replace(',', '.'))
-                break
-            except Exception:
-                pass
-
-    if not amount:
-        return '''<?xml version="1.0" encoding="UTF-8"?>
-<Response><Message>لم أستطع قراءة المبلغ من الرسالة. أرسل بهذا الشكل: 5.500 مطعم</Message></Response>''', 200, {'Content-Type': 'text/xml'}
-
-    # تحديد الفئة من النص
-    body_lower = body.lower()
-    if any(w in body_lower for w in ['مطعم', 'restaurant', 'food', 'طعام', 'كافيه', 'cafe', 'coffee', 'قهوة']):
-        category = 'food'
-    elif any(w in body_lower for w in ['بنزين', 'petrol', 'fuel', 'وقود', 'محطة']):
-        category = 'petrol'
-    elif any(w in body_lower for w in ['صيدل', 'pharmacy', 'دواء']):
-        category = 'pharmacy'
-    elif any(w in body_lower for w in ['سوبر', 'بقال', 'grocery', 'lulu', 'carrefour']):
-        category = 'groceries'
-
-    # استخراج الوصف
-    desc_match = re.search(r'(?:at|@|لدى|من|in)\s+([^\d\n,]+)', body, re.IGNORECASE)
-    if desc_match:
-        description = desc_match.group(1).strip()[:100]
-
-    today = date.today()
-    e = Expense(user_id=user.id, amount=amount, category=category,
-                description=description or 'رسالة بنك', date=today)
-    db.session.add(e)
-    db.session.commit()
-
-    cat = get_cat(category)
-    return f'''<?xml version="1.0" encoding="UTF-8"?>
-<Response><Message>✅ تم تسجيل {amount:.3f} ر.ع - {cat[1]} {cat[2]}</Message></Response>''', 200, {'Content-Type': 'text/xml'}
 
 
 if __name__ == '__main__':
