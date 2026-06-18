@@ -467,6 +467,10 @@ def sms_webhook():
     if not message_body:
         return jsonify({'error': 'no message'}), 400
 
+    # فلتر — فقط رسائل الخصم
+    if 'تم خصم' not in message_body:
+        return jsonify({'ignored': 'not a debit message'}), 200
+
     # التحقق من المستخدم
     user = User.query.filter_by(name=username).first()
     if not user or not check_password_hash(user.pin_hash, str(pin)):
