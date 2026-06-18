@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>تتبع المصروفات</title>
+<title>مصاريفي</title>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="مصاريفي">
+<meta name="theme-color" content="#4f6ef7">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -672,6 +678,11 @@ document.getElementById('editModal').addEventListener('click', e => { if (e.targ
 function openBudget() {
   document.querySelector('input[name="budget_amount"]').focus();
   document.querySelector('input[name="budget_amount"]').scrollIntoView({behavior:'smooth'});
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js');
 }
 </script>
 </body>
