@@ -504,16 +504,13 @@ def sms_webhook():
         cat = 'other'
 
     # استخراج اسم المتجر من رسالة بنك مسقط
-    # صيغة: "في 901279-AL JAZEERA TEA AL K بتاريخ"
-    desc_match = _re.search(r'في\s+[\d\w]+-([^\n]+?)\s+بتاريخ', message_body)
-    if not desc_match:
-        desc_match = _re.search(r'(?:at|in|@)\s+[\d\w-]*([A-Z][A-Z\s]{2,40}?)(?:\s+بتاريخ|\s+on\s|\s+\d)', message_body)
+    # صيغة 1: "في 901279-AL JAZEERA TEA AL K بتاريخ"
+    # صيغة 2: "في AL BURG AL BRONZE TRAD AL KHABOURA OM بتاريخ"
+    desc_match = _re.search(r'في\s+(?:[\d\w]+-)?(.+?)\s+بتاريخ', message_body)
     if desc_match:
         description = desc_match.group(1).strip()
     else:
-        # استخراج أي نص بعد رقم المرجع
-        desc_match2 = _re.search(r'\d{6,}-([A-Z][A-Z\s]+)', message_body)
-        description = desc_match2.group(1).strip() if desc_match2 else 'بنك مسقط - دفعة تلقائية'
+        description = 'بنك مسقط - دفعة تلقائية'
 
     expense = Expense(
         user_id     = user.id,
