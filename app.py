@@ -473,12 +473,13 @@ def sms_webhook():
         return jsonify({'error': 'unauthorized'}), 401
 
     # استخراج المبلغ من رسالة بنك مسقط
-    # أمثلة: "OMR 12.500" أو "RO 5.000" أو "Amount: 8.750"
+    # صيغة بنك مسقط: "تم خصم 0.400 OMR" أو "OMR 12.500" أو "RO 5.000"
     amount = None
-    amt_match = _re.search(r'(?:OMR|RO|Amount[:\s]+)\s*([\d,]+\.\d+)', message_body, _re.IGNORECASE)
+    amt_match = _re.search(r'([\d,]+\.\d+)\s*(?:OMR|RO)|(?:OMR|RO)\s*([\d,]+\.\d+)', message_body, _re.IGNORECASE)
     if amt_match:
         try:
-            amount = float(amt_match.group(1).replace(',', ''))
+            raw = amt_match.group(1) or amt_match.group(2)
+            amount = float(raw.replace(',', ''))
         except Exception:
             amount = None
 
@@ -487,20 +488,28 @@ def sms_webhook():
 
     # تصنيف تلقائي بسيط
     lower = message_body.lower()
-    if any(w in lower for w in ['restaurant', 'coffee', 'cafe', 'مطعم', 'قهوة']):
+    if any(w in lower for w in ['restaurant', 'coffee', 'cafe', 'tea', 'مطعم', 'قهوة', 'شاي']):
         cat = 'food'
-    elif any(w in lower for w in ['petrol', 'fuel', 'بترول', 'وقود']):
+    elif any(w in lower for w in ['petrol', 'fuel', 'station', 'بترول', 'وقود', 'محطة']):
         cat = 'petrol'
-    elif any(w in lower for w in ['pharmacy', 'صيدلية', 'medical', 'طبي']):
+    elif any(w in lower for w in ['pharmacy', 'medical', 'hospital', 'clinic', 'صيدلية', 'طبي', 'مستشفى']):
         cat = 'pharmacy'
-    elif any(w in lower for w in ['supermarket', 'lulu', 'carrefour', 'بقالة', 'سوبرماركت']):
+    elif any(w in lower for w in ['supermarket', 'lulu', 'carrefour', 'hypermarket', 'market', 'بقالة', 'سوبرماركت']):
         cat = 'groceries'
     else:
         cat = 'other'
 
-    # استخراج الوصف — جملة أو متجر
-    desc_match = _re.search(r'(?:at|@|من|في|merchant[:\s]+)\s*([A-Za-z؀-ۿ][^,\n]{2,40})', message_body, _re.IGNORECASE)
-    description = desc_match.group(1).strip() if desc_match else 'بنك مسقط - دفعة تلقائية'
+    # استخراج اسم المتجر من رسالة بنك مسقط
+    # صيغة: "في 901279-AL JAZEERA TEA AL K بتاريخ"
+    desc_match = _re.search(r'في\s+[\d\w]+-([^\n]+?)\s+بتاريخ', message_body)
+    if not desc_match:
+        desc_match = _re.search(r'(?:at|in|@)\s+[\d\w-]*([A-Z][A-Z\s]{2,40}?)(?:\s+بتاريخ|\s+on\s|\s+\d)', message_body)
+    if desc_match:
+        description = desc_match.group(1).strip()
+    else:
+        # استخراج أي نص بعد رقم المرجع
+        desc_match2 = _re.search(r'\d{6,}-([A-Z][A-Z\s]+)', message_body)
+        description = desc_match2.group(1).strip() if desc_match2 else 'بنك مسقط - دفعة تلقائية'
 
     expense = Expense(
         user_id     = user.id,
