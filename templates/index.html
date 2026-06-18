@@ -357,6 +357,10 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
             style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;color:white;font-family:inherit;font-size:.8rem;font-weight:800;cursor:pointer;">
             🖼️ معرض
           </button>
+          <button type="button" onclick="testSMS()"
+            style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:10px;color:white;font-family:inherit;font-size:.8rem;font-weight:800;cursor:pointer;">
+            📩 اختبار SMS
+          </button>
         </div>
       </div>
       <input type="file" id="receiptCamera" accept="image/*" capture="environment" style="display:none" onchange="scanReceipt(this)">
@@ -616,6 +620,35 @@ async function scanReceipt(input) {
   } catch(e) { status.style.background='rgba(244,63,94,.1)'; status.style.color='#f43f5e'; status.textContent='❌ خطأ في الاتصال'; }
   setTimeout(() => { status.style.display='none'; }, 6000);
   input.value = '';
+}
+
+// TEST SMS
+async function testSMS() {
+  const pin = prompt('أدخل الـ PIN بتاعك للاختبار:');
+  if (!pin) return;
+  const testMsg = 'Dear Customer, your Bank Muscat card was used for OMR 12.500 at Test Restaurant. Date: ' + new Date().toLocaleDateString();
+  const status = document.getElementById('scanStatus');
+  status.style.cssText = 'display:block;padding:12px 20px;background:rgba(16,185,129,.1);border-bottom:1px solid rgba(16,185,129,.2);font-size:.85rem;color:#10b981;font-weight:700;text-align:center;';
+  status.textContent = '⏳ جاري إرسال رسالة تجريبية...';
+  try {
+    const res = await fetch('/sms_webhook', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: testMsg, username: '{{ session.username }}', pin: pin })
+    });
+    const json = await res.json();
+    if (json.success) {
+      status.textContent = '✅ نجح الاختبار! تم تسجيل مصروف ' + json.added.amount + ' ر.ع - ' + json.added.description;
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      status.style.background='rgba(244,63,94,.1)'; status.style.color='#f43f5e';
+      status.textContent = '❌ ' + (json.error || 'فشل الاختبار');
+    }
+  } catch(e) {
+    status.style.background='rgba(244,63,94,.1)'; status.style.color='#f43f5e';
+    status.textContent = '❌ خطأ في الاتصال';
+  }
+  setTimeout(() => { status.style.display='none'; }, 5000);
 }
 
 // DELETE
