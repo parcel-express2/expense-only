@@ -451,6 +451,77 @@ def scan_receipt():
 
 
 
+import re as _re
+
+@app.route('/sms_webhook', methods=['POST'])
+def sms_webhook():
+    """
+    iOS Shortcuts يرسل رسالة SMS من bankmuscat هنا تلقائياً.
+    JSON body: { "message": "...", "username": "...", "pin": "..." }
+    """
+    data = request.get_json(silent=True) or {}
+    message_body = data.get('message', '')
+    username     = data.get('username', '')
+    pin          = data.get('pin', '')
+
+    if not message_body:
+        return jsonify({'error': 'no message'}), 400
+
+    # التحقق من المستخدم
+    user = User.query.filter_by(name=username).first()
+    if not user or not check_password_hash(user.pin_hash, str(pin)):
+        return jsonify({'error': 'unauthorized'}), 401
+
+    # استخراج المبلغ من رسالة بنك مسقط
+    # أمثلة: "OMR 12.500" أو "RO 5.000" أو "Amount: 8.750"
+    amount = None
+    amt_match = _re.search(r'(?:OMR|RO|Amount[:\s]+)\s*([\d,]+\.\d+)', message_body, _re.IGNORECASE)
+    if amt_match:
+        try:
+            amount = float(amt_match.group(1).replace(',', ''))
+        except Exception:
+            amount = None
+
+    if not amount or amount <= 0:
+        return jsonify({'error': 'could not parse amount', 'message': message_body}), 422
+
+    # تصنيف تلقائي بسيط
+    lower = message_body.lower()
+    if any(w in lower for w in ['restaurant', 'coffee', 'cafe', 'مطعم', 'قهوة']):
+        cat = 'food'
+    elif any(w in lower for w in ['petrol', 'fuel', 'بترول', 'وقود']):
+        cat = 'petrol'
+    elif any(w in lower for w in ['pharmacy', 'صيدلية', 'medical', 'طبي']):
+        cat = 'pharmacy'
+    elif any(w in lower for w in ['supermarket', 'lulu', 'carrefour', 'بقالة', 'سوبرماركت']):
+        cat = 'groceries'
+    else:
+        cat = 'other'
+
+    # استخراج الوصف — جملة أو متجر
+    desc_match = _re.search(r'(?:at|@|من|في|merchant[:\s]+)\s*([A-Za-z؀-ۿ][^,\n]{2,40})', message_body, _re.IGNORECASE)
+    description = desc_match.group(1).strip() if desc_match else 'بنك مسقط - دفعة تلقائية'
+
+    expense = Expense(
+        user_id     = user.id,
+        amount      = amount,
+        category    = cat,
+        description = description,
+        date        = date.today()
+    )
+    db.session.add(expense)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'added': {
+            'amount':      amount,
+            'category':    cat,
+            'description': description
+        }
+    }), 200
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5051))
     app.run(host='0.0.0.0', debug=True, port=port)
