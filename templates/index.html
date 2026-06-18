@@ -634,7 +634,7 @@ async function testSMS() {
     const res = await fetch('/sms_webhook', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ message: testMsg, username: '{{ session.username }}', pin: pin })
+      body: JSON.stringify({ message: testMsg, username: '{{ session.user_name }}', pin: pin })
     });
     const json = await res.json();
     if (json.success) {
