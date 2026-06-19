@@ -491,11 +491,10 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           const canvas = document.getElementById('pieChart');
           if (!canvas) return;
           const data   = [{% for key, exps in ns.grouped.items() %}{{ exps|sum(attribute='amount') }}{% if not loop.last %},{% endif %}{% endfor %}];
+          const labels = [{% for key, exps in ns.grouped.items() %}"{{ get_cat(key)[1] }}"{% if not loop.last %},{% endif %}{% endfor %}];
           const colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
           const total  = data.reduce((a,b)=>a+b,0);
           if (!total) return;
-          document.fonts.load('bold 26px Outfit').then(drawPie);
-          function drawPie() {
 
           const dpr = window.devicePixelRatio || 1;
           const SIZE = 260;
@@ -508,46 +507,83 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           ctx.scale(dpr, dpr);
 
           const cx = SIZE/2, cy = SIZE/2;
-          const R = 100;          // نصف قطر الدائرة
-          const thickness = 26;   // سماكة الحلقة
-          const gapDeg = 3;       // فجوة بين الشرائح (درجات)
-          const gap = (gapDeg * Math.PI) / 180;
-          let start = -Math.PI / 2;
+          const R = 100, thickness = 26;
+          const gap = (3 * Math.PI) / 180;
 
-          ctx.lineCap = 'round';
-          ctx.lineWidth = thickness;
+          // حفظ زوايا كل شريحة للكشف عن النقر
+          const sliceAngles = [];
 
-          data.forEach((val, i) => {
-            const slice = (val / total) * 2 * Math.PI;
-            if (slice < gap * 2) { start += slice; return; }
+          function drawCenter(label, amount, color) {
+            const bg = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#fff';
             ctx.beginPath();
-            ctx.arc(cx, cy, R, start + gap, start + slice - gap);
-            ctx.strokeStyle = colors[i % colors.length];
-            ctx.stroke();
-            start += slice;
+            ctx.arc(cx, cy, R - thickness/2 - 2, 0, 2*Math.PI);
+            ctx.fillStyle = bg;
+            ctx.fill();
+
+            const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#1a1d23';
+            const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#8a93a8';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 26px Outfit, sans-serif';
+            ctx.fillStyle = color || textColor;
+            ctx.fillText(amount, cx, cy - 10);
+            ctx.font = '600 12px Cairo, sans-serif';
+            ctx.fillStyle = mutedColor;
+            ctx.fillText(label, cx, cy + 14);
+          }
+
+          function draw() {
+            ctx.clearRect(0, 0, SIZE, SIZE);
+            ctx.lineCap = 'round';
+            ctx.lineWidth = thickness;
+            let start = -Math.PI / 2;
+            sliceAngles.length = 0;
+
+            data.forEach((val, i) => {
+              const slice = (val / total) * 2 * Math.PI;
+              sliceAngles.push({ start, end: start + slice, index: i });
+              if (slice < gap * 2) { start += slice; return; }
+              ctx.beginPath();
+              ctx.arc(cx, cy, R, start + gap, start + slice - gap);
+              ctx.strokeStyle = colors[i % colors.length];
+              ctx.stroke();
+              start += slice;
+            });
+
+            drawCenter(total.toFixed(3), 'ر.ع  •  الإجمالي', null);
+          }
+
+          document.fonts.load('bold 26px Outfit').then(draw);
+
+          // الكشف عن النقر
+          canvas.addEventListener('click', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mx = (e.clientX - rect.left) * (SIZE / rect.width);
+            const my = (e.clientY - rect.top)  * (SIZE / rect.height);
+            const dx = mx - cx, dy = my - cy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < R - thickness/2 - 2 || dist > R + thickness/2 + 4) {
+              // نقر على الوسط أو خارج الدائرة — رجوع للإجمالي
+              drawCenter(total.toFixed(3), 'ر.ع  •  الإجمالي', null);
+              return;
+            }
+            let angle = Math.atan2(dy, dx);
+            if (angle < -Math.PI/2) angle += 2*Math.PI;
+            // تحويل للمقياس نفسه (start من -π/2)
+            let a = angle + Math.PI/2;
+            if (a < 0) a += 2*Math.PI;
+
+            for (const s of sliceAngles) {
+              let st = s.start + Math.PI/2, en = s.end + Math.PI/2;
+              if (st < 0) { st += 2*Math.PI; en += 2*Math.PI; }
+              if (a >= st && a <= en) {
+                const i = s.index;
+                const pct = (data[i]/total*100).toFixed(1);
+                drawCenter(data[i].toFixed(3), labels[i] + '  ' + pct + '%', colors[i % colors.length]);
+                break;
+              }
+            }
           });
-
-          // دائرة وسط بيضاء (مظهر الدونات)
-          const bg = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#1a1d2e';
-          ctx.beginPath();
-          ctx.arc(cx, cy, R - thickness/2 - 2, 0, 2*Math.PI);
-          ctx.fillStyle = bg;
-          ctx.fill();
-
-          // النص في المنتصف — رقم كبير + تسمية صغيرة
-          const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#f1f5f9';
-          const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#94a3b8';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          // الرقم الكبير
-          ctx.font = 'bold 26px Outfit, sans-serif';
-          ctx.fillStyle = textColor;
-          ctx.fillText(total.toFixed(3), cx, cy - 10);
-          // وحدة صغيرة
-          ctx.font = '600 13px Cairo, sans-serif';
-          ctx.fillStyle = mutedColor;
-          ctx.fillText('ر.ع  •  الإجمالي', cx, cy + 16);
-          } // end drawPie
         })();
         </script>
       </div>
