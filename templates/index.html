@@ -550,7 +550,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
               start += slice;
             });
 
-            drawCenter(total.toFixed(3), 'ر.ع  •  الإجمالي', null);
+            drawCenter('ر.ع  •  الإجمالي', total.toFixed(3), null);
           }
 
           document.fonts.load('bold 26px Outfit').then(draw);
@@ -564,7 +564,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
             const dist = Math.sqrt(dx*dx + dy*dy);
             if (dist < R - thickness/2 - 2 || dist > R + thickness/2 + 4) {
               // نقر على الوسط أو خارج الدائرة — رجوع للإجمالي
-              drawCenter(total.toFixed(3), 'ر.ع  •  الإجمالي', null);
+              drawCenter('ر.ع  •  الإجمالي', total.toFixed(3), null);
               return;
             }
             let angle = Math.atan2(dy, dx);
@@ -579,7 +579,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
               if (a >= st && a <= en) {
                 const i = s.index;
                 const pct = (data[i]/total*100).toFixed(1);
-                drawCenter(data[i].toFixed(3), labels[i] + '  ' + pct + '%', colors[i % colors.length]);
+                drawCenter(labels[i] + '  ' + pct + '%', data[i].toFixed(3), colors[i % colors.length]);
                 break;
               }
             }
