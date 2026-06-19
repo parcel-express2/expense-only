@@ -489,9 +489,11 @@ def sms_webhook():
     if not amount or amount <= 0:
         return jsonify({'error': 'could not parse amount', 'message': message_body}), 422
 
-    # تصنيف تلقائي بسيط
+    # تصنيف تلقائي
     lower = message_body.lower()
-    if any(w in lower for w in ['restaurant', 'coffee', 'cafe', 'tea', 'مطعم', 'قهوة', 'شاي']):
+    if any(w in lower for w in ['coffee', 'cafe', 'tea', 'juice', 'قهوة', 'شاي', 'عصير']):
+        cat = 'coffee'
+    elif any(w in lower for w in ['restaurant', 'مطعم', 'burger', 'pizza', 'shawarma', 'grill']):
         cat = 'food'
     elif any(w in lower for w in ['petrol', 'fuel', 'station', 'بترول', 'وقود', 'محطة']):
         cat = 'petrol'
