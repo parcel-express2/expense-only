@@ -490,8 +490,8 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
         (function(){
           const canvas = document.getElementById('pieChart');
           if (!canvas) return;
-          const data   = [{% for key, exps in ns.grouped.items() %}{{ exps|sum(attribute='amount') }}{% if not loop.last %},{% endif %}{% endfor %}];
-          const labels = [{% for key, exps in ns.grouped.items() %}"{{ get_cat(key)[1] }}"{% if not loop.last %},{% endif %}{% endfor %}];
+          const data   = [{% for key, exps in ns.grouped.items()|sort(attribute='1.0.amount',reverse=True) %}{{ exps|sum(attribute='amount') }}{% if not loop.last %},{% endif %}{% endfor %}];
+          const labels = [{% for key, exps in ns.grouped.items()|sort(attribute='1.0.amount',reverse=True) %}"{{ get_cat(key)[1] }}"{% if not loop.last %},{% endif %}{% endfor %}];
           const colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
           const total  = data.reduce((a,b)=>a+b,0);
           if (!total) return;
