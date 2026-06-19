@@ -778,10 +778,19 @@ if ('serviceWorker' in navigator) {
 function toggleCat(id) {
   const el = document.getElementById(id);
   const idx = id.split('-')[1];
-  const arr = document.getElementById('arr-' + idx);
   const open = el.style.display === 'block';
-  el.style.display = open ? 'none' : 'block';
-  arr.textContent = open ? '▼' : '▲';
+  // أغلق جميع الفئات المفتوحة
+  document.querySelectorAll('[id^="cat-"]').forEach(div => {
+    div.style.display = 'none';
+    const i = div.id.split('-')[1];
+    const a = document.getElementById('arr-' + i);
+    if (a) a.textContent = '▼';
+  });
+  // افتح الفئة المطلوبة فقط إذا كانت مغلقة
+  if (!open) {
+    el.style.display = 'block';
+    document.getElementById('arr-' + idx).textContent = '▲';
+  }
 }
 // تاريخ اليوم تلقائياً
 const dateField = document.getElementById('expenseDate');
