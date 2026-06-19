@@ -403,22 +403,52 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
         <div class="divider"></div>
 
         {% if expenses %}
+          <!-- تجميع المصروفات حسب الفئة -->
+          {% set ns = namespace(grouped={}) %}
+          {% for e in expenses|sort(attribute='date', reverse=True) %}
+            {% if e.category not in ns.grouped %}
+              {% set _ = ns.grouped.update({e.category: []}) %}
+            {% endif %}
+            {% set _ = ns.grouped[e.category].append(e) %}
+          {% endfor %}
+
           <div class="tx-list">
-            {% for e in expenses|sort(attribute='date', reverse=True) %}
-              {% set cat = get_cat(e.category) %}
-              <div class="tx">
-                <div class="tx-l">
-                  <div class="tx-ico">{{ cat[2] }}</div>
-                  <div>
-                    <div class="tx-name">{{ cat[1] }}</div>
-                    <div class="tx-date">{{ e.date.strftime('%Y/%m/%d') }}{% if e.description %} · {{ e.description }}{% endif %}</div>
+            {% for cat_key, cat_expenses in ns.grouped.items() %}
+              {% set cat = get_cat(cat_key) %}
+              {% set cat_total = cat_expenses|sum(attribute='amount') %}
+              {% set uid = loop.index %}
+
+              <!-- بطاقة الفئة -->
+              <div onclick="toggleCat('cat-{{ uid }}')"
+                style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface2);border-radius:16px;margin-bottom:8px;cursor:pointer;user-select:none;">
+                <div style="width:44px;height:44px;border-radius:13px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">{{ cat[2] }}</div>
+                <div style="flex:1;">
+                  <div style="font-size:.88rem;font-weight:800;color:var(--text);">{{ cat[1] }}</div>
+                  <div style="font-size:.75rem;color:var(--muted);margin-top:2px;">{{ cat_expenses|length }} مصروف</div>
+                </div>
+                <div style="text-align:left;">
+                  <div style="font-size:.9rem;font-weight:800;color:var(--red);">{{ "%.3f"|format(cat_total) }}</div>
+                  <div style="font-size:.7rem;color:var(--muted);">ر.ع</div>
+                </div>
+                <div id="arr-{{ uid }}" style="color:var(--muted);font-size:.8rem;transition:.2s;">▼</div>
+              </div>
+
+              <!-- مصروفات الفئة -->
+              <div id="cat-{{ uid }}" style="display:none;margin-bottom:12px;padding-right:10px;border-right:3px solid var(--accent-dim);">
+                {% for e in cat_expenses %}
+                  <div class="tx" style="margin-bottom:6px;">
+                    <div class="tx-l">
+                      <div>
+                        <div class="tx-date">{{ e.date.strftime('%Y/%m/%d') }}{% if e.description %} · {{ e.description }}{% endif %}</div>
+                      </div>
+                    </div>
+                    <div class="tx-r">
+                      <span class="tx-amt">{{ "%.3f"|format(e.amount) }}</span>
+                      <button class="btn-edit" onclick="event.stopPropagation();openEdit({{ e.id }}, {{ e.amount }}, '{{ e.category }}', '{{ e.description or '' }}', '{{ e.date }}')">✏️</button>
+                      <button class="btn-del" onclick="event.stopPropagation();confirmDel('/delete_expense/{{ e.id }}', '{{ "%.3f"|format(e.amount) }} ر.ع')">🗑</button>
+                    </div>
                   </div>
-                </div>
-                <div class="tx-r">
-                  <span class="tx-amt">{{ "%.3f"|format(e.amount) }}</span>
-                  <button class="btn-edit" onclick="openEdit({{ e.id }}, {{ e.amount }}, '{{ e.category }}', '{{ e.description or '' }}', '{{ e.date }}')">✏️</button>
-                  <button class="btn-del" onclick="confirmDel('/delete_expense/{{ e.id }}', '{{ "%.3f"|format(e.amount) }} ر.ع')">🗑</button>
-                </div>
+                {% endfor %}
               </div>
             {% endfor %}
           </div>
@@ -736,6 +766,14 @@ function openBudget() {
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/static/sw.js');
+}
+function toggleCat(id) {
+  const el = document.getElementById(id);
+  const idx = id.split('-')[1];
+  const arr = document.getElementById('arr-' + idx);
+  const open = el.style.display === 'block';
+  el.style.display = open ? 'none' : 'block';
+  arr.textContent = open ? '▼' : '▲';
 }
 // تاريخ اليوم تلقائياً
 const dateField = document.getElementById('expenseDate');
