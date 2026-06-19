@@ -542,9 +542,12 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
             data.forEach((val, i) => {
               const slice = (val / total) * 2 * Math.PI;
               sliceAngles.push({ start, end: start + slice, index: i });
-              if (slice < gap * 2) { start += slice; return; }
+              // رسم حتى الشرائح الصغيرة بحجم أدنى مرئي
+              const minSlice = gap * 1.2;
+              const drawSlice = Math.max(slice, minSlice);
+              const innerGap = slice < gap * 2 ? drawSlice * 0.1 : gap;
               ctx.beginPath();
-              ctx.arc(cx, cy, R, start + gap, start + slice - gap);
+              ctx.arc(cx, cy, R, start + innerGap, start + drawSlice - innerGap);
               ctx.strokeStyle = colors[i % colors.length];
               ctx.stroke();
               start += slice;
