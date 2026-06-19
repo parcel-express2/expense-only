@@ -404,36 +404,37 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
 
     <!-- CHART + STATS -->
     <div style="display:flex;flex-direction:column;gap:20px;">
-      <div class="chart-panel" style="flex:1;">
-        <div class="chart-hdr" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="ch-dot"></span>
-            <span id="chartTitle">المصروفات الشهرية — {{ current_year }}</span>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button onclick="setMode('monthly')" id="btnMonthly"
-              style="padding:5px 14px;border-radius:8px;border:none;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#38bdf8,#818cf8);color:white;">
-              📅 أشهر
-            </button>
-            <button onclick="setMode('daily')" id="btnDaily"
-              style="padding:5px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:var(--surface3);color:var(--muted);">
-              📆 أيام
-            </button>
-          </div>
-        </div>
-        <canvas id="chart" height="200"></canvas>
-      </div>
 
       {% if expenses %}
       <div class="panel" style="padding:20px;">
         <div style="font-size:.85rem;font-weight:800;color:var(--accent);margin-bottom:16px;">📊 توزيع المصروفات</div>
 
-        <!-- Pie Chart -->
+        <!-- Donut Chart -->
         {% if all_total > 0 %}
-        <div style="position:relative;width:320px;height:320px;margin:0 auto 24px;">
-          <canvas id="pieChart" width="320" height="320"></canvas>
+        <div style="position:relative;width:260px;height:260px;margin:0 auto 8px;">
+          <canvas id="pieChart" width="260" height="260"></canvas>
         </div>
         {% endif %}
+
+        <!-- زر تبديل الرسم الشهري -->
+        <div style="display:flex;justify-content:center;gap:8px;margin:16px 0 8px;">
+          <span style="font-size:.8rem;font-weight:700;color:var(--muted);" id="chartTitle">المصروفات الشهرية — {{ current_year }}</span>
+        </div>
+        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:12px;">
+          <button onclick="setMode('monthly')" id="btnMonthly"
+            style="padding:5px 14px;border-radius:8px;border:none;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#38bdf8,#818cf8);color:white;">
+            📅 أشهر
+          </button>
+          <button onclick="setMode('daily')" id="btnDaily"
+            style="padding:5px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;background:var(--surface3);color:var(--muted);">
+            📆 أيام
+          </button>
+        </div>
+        <canvas id="chart" height="180"></canvas>
+      </div>
+
+      <div class="panel" style="padding:20px;">
+        <div style="font-size:.85rem;font-weight:800;color:var(--accent);margin-bottom:16px;">📋 المصروفات حسب الفئة</div>
 
         <!-- فئات قابلة للطي مع المصروفات -->
         {% set ns = namespace(grouped={}) %}
@@ -489,13 +490,12 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           const canvas = document.getElementById('pieChart');
           if (!canvas) return;
           const data   = [{% for key, exps in ns.grouped.items() %}{{ exps|sum(attribute='amount') }}{% if not loop.last %},{% endif %}{% endfor %}];
-          const labels = [{% for key, exps in ns.grouped.items() %}"{{ get_cat(key)[1] }}"{% if not loop.last %},{% endif %}{% endfor %}];
           const colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
           const total  = data.reduce((a,b)=>a+b,0);
           if (!total) return;
 
           const dpr = window.devicePixelRatio || 1;
-          const SIZE = 320;
+          const SIZE = 260;
           canvas.width  = SIZE * dpr;
           canvas.height = SIZE * dpr;
           canvas.style.width  = SIZE + 'px';
@@ -504,74 +504,42 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           const ctx = canvas.getContext('2d');
           ctx.scale(dpr, dpr);
 
-          const cx = SIZE/2, cy = SIZE/2, R = 95, r = 48;
-          let start = -Math.PI/2;
+          const cx = SIZE/2, cy = SIZE/2;
+          const R = 100;          // نصف قطر الدائرة
+          const thickness = 26;   // سماكة الحلقة
+          const gapDeg = 3;       // فجوة بين الشرائح (درجات)
+          const gap = (gapDeg * Math.PI) / 180;
+          let start = -Math.PI / 2;
 
-          // رسم الشرائح أولاً
+          ctx.lineCap = 'round';
+          ctx.lineWidth = thickness;
+
           data.forEach((val, i) => {
-            const slice = (val/total) * 2 * Math.PI;
+            const slice = (val / total) * 2 * Math.PI;
+            if (slice < gap * 2) { start += slice; return; }
             ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, R, start, start + slice);
-            ctx.closePath();
-            ctx.fillStyle = colors[i % 10];
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 1.5;
+            ctx.arc(cx, cy, R, start + gap, start + slice - gap);
+            ctx.strokeStyle = colors[i % colors.length];
             ctx.stroke();
             start += slice;
           });
 
-          // ثقب الدائرة
+          // دائرة وسط بيضاء (مظهر الدونات)
+          const bg = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#1a1d2e';
           ctx.beginPath();
-          ctx.arc(cx, cy, r, 0, 2*Math.PI);
-          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#fff';
+          ctx.arc(cx, cy, R - thickness/2 - 2, 0, 2*Math.PI);
+          ctx.fillStyle = bg;
           ctx.fill();
 
-          // رسم الخطوط والتسميات
-          start = -Math.PI/2;
-          data.forEach((val, i) => {
-            const slice = (val/total) * 2 * Math.PI;
-            const mid   = start + slice/2;
-            const pct   = (val/total*100).toFixed(1);
-            const color = colors[i % 10];
-
-            // نقطة على حافة الدائرة
-            const p1x = cx + R * Math.cos(mid);
-            const p1y = cy + R * Math.sin(mid);
-
-            // نقطة وسط الخط
-            const lineLen = 18;
-            const p2x = cx + (R + lineLen) * Math.cos(mid);
-            const p2y = cy + (R + lineLen) * Math.sin(mid);
-
-            // نقطة نهاية الخط الأفقي
-            const hLen = 12;
-            const isRight = Math.cos(mid) >= 0;
-            const p3x = p2x + (isRight ? hLen : -hLen);
-            const p3y = p2y;
-
-            // رسم الخط
-            ctx.beginPath();
-            ctx.moveTo(p1x, p1y);
-            ctx.lineTo(p2x, p2y);
-            ctx.lineTo(p3x, p3y);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
-
-            // الاسم والنسبة بنفس لون الشريحة
-            ctx.fillStyle = color;
-            ctx.font = 'bold 9px Cairo, sans-serif';
-            ctx.textAlign = isRight ? 'left' : 'right';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(labels[i], p3x + (isRight ? 3 : -3), p3y);
-            ctx.font = '8px Cairo, sans-serif';
-            ctx.textBaseline = 'top';
-            ctx.fillText(pct + ' %', p3x + (isRight ? 3 : -3), p3y + 1);
-
-            start += slice;
-          });
+          // النص في المنتصف - الإجمالي
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#f1f5f9';
+          ctx.font = 'bold 15px Cairo, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(total.toFixed(3) + ' ر.ع', cx, cy - 8);
+          ctx.font = '11px Cairo, sans-serif';
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#94a3b8';
+          ctx.fillText('الإجمالي', cx, cy + 12);
 
         })();
         </script>
