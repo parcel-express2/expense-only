@@ -390,7 +390,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           <div class="frow">
             <div class="fg">
               <label>التاريخ</label>
-              <input type="date" name="date" value="{{ current_year }}-{{ '%02d'|format(current_month) }}-01" required>
+              <input type="date" name="date" id="expenseDate" required>
             </div>
             <div class="fg">
               <label>ملاحظة</label>
@@ -737,6 +737,9 @@ function openBudget() {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/static/sw.js');
 }
+// تاريخ اليوم تلقائياً
+const dateField = document.getElementById('expenseDate');
+if (dateField) dateField.value = new Date().toISOString().split('T')[0];
 </script>
 </body>
 </html>
