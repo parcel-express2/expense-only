@@ -484,7 +484,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
                   </div>
                 </div>
                 <div class="tx-r">
-                  <span class="tx-amt">{{ "%.3f"|format(e.amount) }}</span>
+                  <span class="tx-amt" style="color:#f59e0b;">{{ "%.3f"|format(e.amount) }}</span>
                   <button class="btn-edit" onclick="event.stopPropagation();openEdit({{ e.id }}, {{ e.amount }}, '{{ e.category }}', '{{ e.description or '' }}', '{{ e.date }}')">✏️</button>
                   <button class="btn-del" onclick="event.stopPropagation();confirmDel('/delete_expense/{{ e.id }}', '{{ "%.3f"|format(e.amount) }} ر.ع')">🗑</button>
                 </div>
