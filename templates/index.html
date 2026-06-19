@@ -447,7 +447,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
         {% endfor %}
 
         {% set colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'] %}
-        {% for cat_key, cat_expenses in ns.grouped.items()|sort(attribute='1.0.amount', reverse=True) %}
+        {% for cat_key, cat_expenses in ns.grouped.items()|sort(attribute='1.0.date', reverse=True) %}
           {% set cat = get_cat(cat_key) %}
           {% set cat_total = cat_expenses|sum(attribute='amount') %}
           {% set pct = (cat_total / all_total * 100)|round(1) if all_total > 0 else 0 %}
