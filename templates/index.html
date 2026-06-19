@@ -531,15 +531,19 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           ctx.fillStyle = bg;
           ctx.fill();
 
-          // النص في المنتصف - الإجمالي
-          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#f1f5f9';
-          ctx.font = 'bold 15px Cairo, sans-serif';
+          // النص في المنتصف — رقم كبير + تسمية صغيرة
+          const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#f1f5f9';
+          const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#94a3b8';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(total.toFixed(3) + ' ر.ع', cx, cy - 8);
-          ctx.font = '11px Cairo, sans-serif';
-          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#94a3b8';
-          ctx.fillText('الإجمالي', cx, cy + 12);
+          // الرقم الكبير
+          ctx.font = 'bold 26px Cairo, sans-serif';
+          ctx.fillStyle = textColor;
+          ctx.fillText(total.toFixed(3), cx, cy - 10);
+          // وحدة صغيرة
+          ctx.font = '600 13px Cairo, sans-serif';
+          ctx.fillStyle = mutedColor;
+          ctx.fillText('ر.ع  •  الإجمالي', cx, cy + 16);
 
         })();
         </script>
@@ -631,6 +635,8 @@ async function loadChart(mode) {
   if (myChart) myChart.destroy();
   const isDaily = currentMode === 'daily';
   const today = new Date().getDate();
+  const barColors = ['#10b981','#f43f5e','#a78bfa','#38bdf8','#f59e0b','#ec4899','#84cc16','#06b6d4','#f97316','#6366f1','#14b8a6','#e879f9'];
+  const activeIdx = isDaily ? (today - 1) : (CURRENT_MONTH - 1);
   myChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -639,10 +645,12 @@ async function loadChart(mode) {
         label: 'المصروفات (ر.ع)',
         data: d.data,
         backgroundColor: d.data.map((v, i) => {
-          if (isDaily) return (i + 1 === today) ? 'rgba(244,63,94,.95)' : 'rgba(244,63,94,.35)';
-          else return (i + 1 === CURRENT_MONTH) ? 'rgba(244,63,94,.95)' : 'rgba(244,63,94,.35)';
+          const c = barColors[i % barColors.length];
+          return i === activeIdx ? c : c + '66';
         }),
-        borderRadius: 6, borderSkipped: false,
+        borderRadius: { topLeft: 20, topRight: 20, bottomLeft: 0, bottomRight: 0 },
+        borderSkipped: false,
+        barPercentage: 0.55,
       }]
     },
     options: {
@@ -652,8 +660,17 @@ async function loadChart(mode) {
         tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(3)} ر.ع` } }
       },
       scales: {
-        x: { ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: isDaily ? 9 : 11 }, maxRotation: isDaily ? 45 : 0 }, grid: { color: 'rgba(255,255,255,.03)' } },
-        y: { beginAtZero: true, ticks: { color: '#6b7a9e', font: { family: 'Cairo' }, callback: v => v.toFixed(0) }, grid: { color: 'rgba(255,255,255,.05)' } }
+        x: {
+          ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: isDaily ? 9 : 11 }, maxRotation: isDaily ? 45 : 0 },
+          grid: { display: false },
+          border: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: 10 }, callback: v => v.toFixed(0) },
+          grid: { color: 'rgba(148,163,184,.15)', lineWidth: 1, borderDash: [4, 4] },
+          border: { display: false, dash: [4,4] }
+        }
       }
     }
   });
