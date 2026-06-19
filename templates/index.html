@@ -433,7 +433,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
         <canvas id="chart" height="200"></canvas>
       </div>
 
-      {% if by_cat %}
+      {% if expenses %}
       <div class="panel" style="padding:20px;">
         <div style="font-size:.85rem;font-weight:800;color:var(--accent);margin-bottom:16px;">📊 توزيع المصروفات</div>
 
@@ -442,76 +442,9 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
         <div style="position:relative;width:180px;height:180px;margin:0 auto 20px;">
           <canvas id="pieChart" width="180" height="180"></canvas>
         </div>
-        <!-- Legend -->
-        {% set colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'] %}
-        {% set sorted_cats = by_cat.items()|list|sort(attribute='1', reverse=True) %}
-        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px;">
-          {% for key, amount in sorted_cats %}
-            {% set loop_idx = loop.index0 %}
-            {% set cat = get_cat(key) %}
-            {% set pct = (amount / all_total * 100)|round(1) if all_total > 0 else 0 %}
-            <div style="display:flex;align-items:center;gap:5px;font-size:.75rem;font-weight:700;">
-              <span style="width:10px;height:10px;border-radius:50%;background:{{ colors[loop_idx % 10] }};display:inline-block;flex-shrink:0;"></span>
-              <span>{{ cat[1] }}</span>
-            </div>
-          {% endfor %}
-        </div>
         {% endif %}
 
-        <!-- قائمة تفصيلية -->
-        {% set sorted_cats = by_cat.items()|list|sort(attribute='1', reverse=True) %}
-        {% set colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'] %}
-        {% for key, amount in sorted_cats %}
-          {% set loop_idx = loop.index0 %}
-          {% set cat = get_cat(key) %}
-          {% set pct = (amount / all_total * 100)|round(1) if all_total > 0 else 0 %}
-          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:14px;margin-bottom:10px;">
-            <div style="width:42px;height:42px;border-radius:12px;background:{{ colors[loop_idx % 10] }}22;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">{{ cat[2] }}</div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:.82rem;font-weight:800;color:var(--text);">{{ cat[1] }}</div>
-              <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">{{ pct }}% من الإجمالي</div>
-            </div>
-            <div style="text-align:left;flex-shrink:0;">
-              <div style="font-size:.85rem;font-weight:800;color:var(--text);">{{ "%.3f"|format(amount) }}</div>
-              <div style="font-size:.7rem;color:var(--muted);">ر.ع</div>
-            </div>
-          </div>
-        {% endfor %}
-
-        <script>
-        (function(){
-          const canvas = document.getElementById('pieChart');
-          if (!canvas) return;
-          const data = [{% for key, amount in by_cat.items()|list|sort(attribute='1', reverse=True) %}{{ amount }}{% if not loop.last %},{% endif %}{% endfor %}];
-          const colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
-          const total = data.reduce((a,b)=>a+b,0);
-          if (!total) return;
-          const ctx = canvas.getContext('2d');
-          let start = -Math.PI/2;
-          data.forEach((val, i) => {
-            const slice = (val/total) * 2 * Math.PI;
-            ctx.beginPath();
-            ctx.moveTo(90,90);
-            ctx.arc(90,90,85,start,start+slice);
-            ctx.closePath();
-            ctx.fillStyle = colors[i % 10];
-            ctx.fill();
-            start += slice;
-          });
-          // ثقب الدائرة
-          ctx.beginPath();
-          ctx.arc(90,90,45,0,2*Math.PI);
-          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#fff';
-          ctx.fill();
-        })();
-        </script>
-      </div>
-      {% endif %}
-
-      <!-- فئات المصروفات -->
-      {% if expenses %}
-      <div class="panel" style="padding:20px;">
-        <div style="font-size:.85rem;font-weight:800;color:var(--accent);margin-bottom:16px;">📋 المصروفات حسب الفئة</div>
+        <!-- فئات قابلة للطي مع المصروفات -->
         {% set ns = namespace(grouped={}) %}
         {% for e in expenses|sort(attribute='date', reverse=True) %}
           {% if e.category not in ns.grouped %}
@@ -520,26 +453,29 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           {% set _ = ns.grouped[e.category].append(e) %}
         {% endfor %}
 
-        {% for cat_key, cat_expenses in ns.grouped.items() %}
+        {% set colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'] %}
+        {% for cat_key, cat_expenses in ns.grouped.items()|sort(attribute='1.0.amount', reverse=True) %}
           {% set cat = get_cat(cat_key) %}
           {% set cat_total = cat_expenses|sum(attribute='amount') %}
-          {% set uid = 'r' ~ loop.index %}
+          {% set pct = (cat_total / all_total * 100)|round(1) if all_total > 0 else 0 %}
+          {% set uid = loop.index %}
+          {% set clr = colors[(loop.index0) % 10] %}
 
           <div onclick="toggleCat('cat-{{ uid }}')"
-            style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface2);border-radius:16px;margin-bottom:8px;cursor:pointer;user-select:none;">
-            <div style="width:44px;height:44px;border-radius:13px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">{{ cat[2] }}</div>
+            style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--surface2);border-radius:16px;margin-bottom:8px;cursor:pointer;user-select:none;">
+            <div style="width:44px;height:44px;border-radius:13px;background:{{ clr }}22;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">{{ cat[2] }}</div>
             <div style="flex:1;">
-              <div style="font-size:.88rem;font-weight:800;color:var(--text);">{{ cat[1] }}</div>
-              <div style="font-size:.75rem;color:var(--muted);margin-top:2px;">{{ cat_expenses|length }} مصروف</div>
+              <div style="font-size:.85rem;font-weight:800;color:var(--text);">{{ cat[1] }}</div>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">{{ pct }}% · {{ cat_expenses|length }} مصروف</div>
             </div>
-            <div style="text-align:left;">
-              <div style="font-size:.9rem;font-weight:800;color:var(--red);">{{ "%.3f"|format(cat_total) }}</div>
+            <div style="text-align:left;flex-shrink:0;">
+              <div style="font-size:.88rem;font-weight:800;color:var(--red);">{{ "%.3f"|format(cat_total) }}</div>
               <div style="font-size:.7rem;color:var(--muted);">ر.ع</div>
             </div>
-            <div id="arr-{{ uid }}" style="color:var(--muted);font-size:.8rem;transition:.2s;">▼</div>
+            <div id="arr-{{ uid }}" style="color:var(--muted);font-size:.75rem;margin-right:2px;">▼</div>
           </div>
 
-          <div id="cat-{{ uid }}" style="display:none;margin-bottom:12px;padding-right:10px;border-right:3px solid var(--accent-dim);">
+          <div id="cat-{{ uid }}" style="display:none;margin-bottom:10px;padding-right:10px;border-right:3px solid {{ clr }}44;">
             {% for e in cat_expenses %}
               <div class="tx" style="margin-bottom:6px;">
                 <div class="tx-l">
@@ -556,6 +492,33 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
             {% endfor %}
           </div>
         {% endfor %}
+
+        <script>
+        (function(){
+          const canvas = document.getElementById('pieChart');
+          if (!canvas) return;
+          const data = [{% for key, exps in ns.grouped.items() %}{{ exps|sum(attribute='amount') }}{% if not loop.last %},{% endif %}{% endfor %}];
+          const colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
+          const total = data.reduce((a,b)=>a+b,0);
+          if (!total) return;
+          const ctx = canvas.getContext('2d');
+          let start = -Math.PI/2;
+          data.forEach((val, i) => {
+            const slice = (val/total) * 2 * Math.PI;
+            ctx.beginPath();
+            ctx.moveTo(90,90);
+            ctx.arc(90,90,85,start,start+slice);
+            ctx.closePath();
+            ctx.fillStyle = colors[i % 10];
+            ctx.fill();
+            start += slice;
+          });
+          ctx.beginPath();
+          ctx.arc(90,90,45,0,2*Math.PI);
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#fff';
+          ctx.fill();
+        })();
+        </script>
       </div>
       {% endif %}
 
