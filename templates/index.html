@@ -439,8 +439,8 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
 
         <!-- Pie Chart -->
         {% if all_total > 0 %}
-        <div style="position:relative;width:260px;height:260px;margin:0 auto 24px;">
-          <canvas id="pieChart" width="260" height="260"></canvas>
+        <div style="position:relative;width:320px;height:320px;margin:0 auto 24px;">
+          <canvas id="pieChart" width="320" height="320"></canvas>
         </div>
         {% endif %}
 
@@ -504,7 +504,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           if (!total) return;
 
           const dpr = window.devicePixelRatio || 1;
-          const SIZE = 260;
+          const SIZE = 320;
           canvas.width  = SIZE * dpr;
           canvas.height = SIZE * dpr;
           canvas.style.width  = SIZE + 'px';
@@ -513,14 +513,12 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           const ctx = canvas.getContext('2d');
           ctx.scale(dpr, dpr);
 
-          const cx = SIZE/2, cy = SIZE/2, R = 110, r = 55;
+          const cx = SIZE/2, cy = SIZE/2, R = 95, r = 48;
           let start = -Math.PI/2;
 
+          // رسم الشرائح أولاً
           data.forEach((val, i) => {
             const slice = (val/total) * 2 * Math.PI;
-            const mid   = start + slice/2;
-
-            // قطعة الدائرة
             ctx.beginPath();
             ctx.moveTo(cx, cy);
             ctx.arc(cx, cy, R, start, start + slice);
@@ -528,34 +526,8 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
             ctx.fillStyle = colors[i % 10];
             ctx.fill();
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
             ctx.stroke();
-
-            // النسبة المئوية على الشريحة
-            const pct = Math.round(val/total*100);
-            if (pct >= 4) {
-              const labelR = (R + r) / 2;
-              const lx = cx + labelR * Math.cos(mid);
-              const ly = cy + labelR * Math.sin(mid);
-              ctx.fillStyle = '#fff';
-              ctx.font = `bold ${dpr > 1 ? 11 : 10}px Cairo, sans-serif`;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(pct + '%', lx, ly);
-            }
-
-            // اسم الفئة خارج الدائرة
-            if (pct >= 6) {
-              const outR = R + 18;
-              const ox = cx + outR * Math.cos(mid);
-              const oy = cy + outR * Math.sin(mid);
-              ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#1a1d23';
-              ctx.font = `bold 9px Cairo, sans-serif`;
-              ctx.textAlign = ox < cx ? 'right' : 'left';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(labels[i], ox, oy);
-            }
-
             start += slice;
           });
 
@@ -565,15 +537,60 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#fff';
           ctx.fill();
 
+          // رسم الخطوط والتسميات
+          start = -Math.PI/2;
+          data.forEach((val, i) => {
+            const slice = (val/total) * 2 * Math.PI;
+            const mid   = start + slice/2;
+            const pct   = (val/total*100).toFixed(1);
+            const color = colors[i % 10];
+
+            // نقطة على حافة الدائرة
+            const p1x = cx + R * Math.cos(mid);
+            const p1y = cy + R * Math.sin(mid);
+
+            // نقطة وسط الخط
+            const lineLen = 18;
+            const p2x = cx + (R + lineLen) * Math.cos(mid);
+            const p2y = cy + (R + lineLen) * Math.sin(mid);
+
+            // نقطة نهاية الخط الأفقي
+            const hLen = 12;
+            const isRight = Math.cos(mid) >= 0;
+            const p3x = p2x + (isRight ? hLen : -hLen);
+            const p3y = p2y;
+
+            // رسم الخط
+            ctx.beginPath();
+            ctx.moveTo(p1x, p1y);
+            ctx.lineTo(p2x, p2y);
+            ctx.lineTo(p3x, p3y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            // الاسم والنسبة بنفس لون الشريحة
+            ctx.fillStyle = color;
+            ctx.font = 'bold 9px Cairo, sans-serif';
+            ctx.textAlign = isRight ? 'left' : 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(labels[i], p3x + (isRight ? 3 : -3), p3y);
+            ctx.font = '8px Cairo, sans-serif';
+            ctx.textBaseline = 'top';
+            ctx.fillText(pct + ' %', p3x + (isRight ? 3 : -3), p3y + 1);
+
+            start += slice;
+          });
+
           // إجمالي في المنتصف
           ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#1a1d23';
           ctx.font = 'bold 11px Cairo, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText('{{ "%.3f"|format(all_total) }}', cx, cy - 8);
+          ctx.fillText('{{ "%.3f"|format(all_total) }}', cx, cy - 7);
           ctx.font = '9px Cairo, sans-serif';
           ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#888';
-          ctx.fillText('ر.ع', cx, cy + 8);
+          ctx.fillText('ر.ع', cx, cy + 7);
         })();
         </script>
       </div>
