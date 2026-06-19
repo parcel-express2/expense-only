@@ -468,9 +468,11 @@ def sms_webhook():
     if not message_body:
         return jsonify({'error': 'no message'}), 400
 
-    # فلتر — فقط رسائل الخصم
-    if 'تم خصم' not in message_body:
-        return jsonify({'ignored': 'not a debit message'}), 200
+    # فلتر — رسائل الخصم أو التحويل فقط
+    is_debit    = 'تم خصم' in message_body
+    is_transfer = 'لقد قمت بإرسال' in message_body or 'قمت بتحويل' in message_body
+    if not is_debit and not is_transfer:
+        return jsonify({'ignored': 'not a debit or transfer message'}), 200
 
     # التحقق من المستخدم
     user = User.query.filter_by(name=username).first()
@@ -491,9 +493,11 @@ def sms_webhook():
     if not amount or amount <= 0:
         return jsonify({'error': 'could not parse amount', 'message': message_body}), 422
 
-    # تصنيف تلقائي بسيط
+    # تصنيف تلقائي
     lower = message_body.lower()
-    if any(w in lower for w in ['restaurant', 'coffee', 'cafe', 'tea', 'مطعم', 'قهوة', 'شاي']):
+    if is_transfer:
+        cat = 'transfer'
+    elif any(w in lower for w in ['restaurant', 'coffee', 'cafe', 'tea', 'مطعم', 'قهوة', 'شاي']):
         cat = 'food'
     elif any(w in lower for w in ['petrol', 'fuel', 'station', 'بترول', 'وقود', 'محطة']):
         cat = 'petrol'
