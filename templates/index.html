@@ -265,18 +265,17 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
 <form method="GET" action="/">
   <div class="month-bar">
     <label>📅</label>
-    <select name="month">
+    <select name="month" onchange="this.form.submit()">
       {% for num, name in [(1,'يناير'),(2,'فبراير'),(3,'مارس'),(4,'أبريل'),(5,'مايو'),(6,'يونيو'),(7,'يوليو'),(8,'أغسطس'),(9,'سبتمبر'),(10,'أكتوبر'),(11,'نوفمبر'),(12,'ديسمبر')] %}
         <option value="{{ num }}" {% if num == current_month %}selected{% endif %}>{{ name }}</option>
       {% endfor %}
     </select>
-    <select name="year">
+    <select name="year" onchange="this.form.submit()">
       {% for y in years_list %}
         <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
       {% endfor %}
     </select>
     <input class="search-input" type="text" name="q" placeholder="🔍 بحث..." value="{{ search }}">
-    <button type="submit" class="btn-view">عرض</button>
     <a href="/export_excel?month={{ current_month }}&year={{ current_year }}" class="btn-export">⬇️ Excel</a>
   </div>
 </form>
