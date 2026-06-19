@@ -494,6 +494,8 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           const colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
           const total  = data.reduce((a,b)=>a+b,0);
           if (!total) return;
+          document.fonts.load('bold 26px Outfit').then(drawPie);
+          function drawPie() {
 
           const dpr = window.devicePixelRatio || 1;
           const SIZE = 260;
@@ -545,7 +547,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           ctx.font = '600 13px Cairo, sans-serif';
           ctx.fillStyle = mutedColor;
           ctx.fillText('ر.ع  •  الإجمالي', cx, cy + 16);
-
+          } // end drawPie
         })();
         </script>
       </div>
