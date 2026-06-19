@@ -582,15 +582,6 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
             start += slice;
           });
 
-          // إجمالي في المنتصف
-          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#1a1d23';
-          ctx.font = 'bold 11px Cairo, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('{{ "%.3f"|format(all_total) }}', cx, cy - 7);
-          ctx.font = '9px Cairo, sans-serif';
-          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#888';
-          ctx.fillText('ر.ع', cx, cy + 7);
         })();
         </script>
       </div>
