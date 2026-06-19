@@ -11,8 +11,9 @@
 <meta name="theme-color" content="#4f6ef7">
 <link rel="apple-touch-icon" href="/static/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
+.num { font-family: 'Outfit', sans-serif; font-variant-numeric: tabular-nums; }
 :root {
   --bg: #f5f7fa;
   --surface: #ffffff;
@@ -116,7 +117,7 @@ header {
   position: relative; overflow: hidden;
 }
 .stat-label { font-size: .72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
-.stat-value { font-size: 1.6rem; font-weight: 900; line-height: 1; }
+.stat-value { font-size: 1.6rem; font-weight: 900; line-height: 1; font-family: 'Outfit', sans-serif; font-variant-numeric: tabular-nums; }
 .stat-sub   { font-size: .72rem; color: var(--muted); margin-top: 5px; }
 .stat-icon  { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 2rem; opacity: .1; }
 
@@ -187,7 +188,7 @@ header {
 .tx-name { font-weight: 700; font-size: .85rem; }
 .tx-date { font-size: .7rem; color: var(--muted); margin-top: 2px; }
 .tx-r { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.tx-amt { font-weight: 900; font-size: .95rem; color: var(--red); }
+.tx-amt { font-weight: 900; font-size: .95rem; color: var(--red); font-family: 'Outfit', sans-serif; }
 .btn-del {
   background: none; border: none; color: var(--muted); cursor: pointer;
   padding: 5px 7px; border-radius: 8px; font-size: .85rem; transition: color .15s, background .15s;
@@ -461,7 +462,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
               <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">{{ pct }}% · {{ cat_expenses|length }} مصروف</div>
             </div>
             <div style="text-align:left;flex-shrink:0;">
-              <div style="font-size:.88rem;font-weight:800;color:var(--red);">{{ "%.3f"|format(cat_total) }}</div>
+              <div style="font-size:.88rem;font-weight:800;color:var(--red);font-family:'Outfit',sans-serif;">{{ "%.3f"|format(cat_total) }}</div>
               <div style="font-size:.7rem;color:var(--muted);">ر.ع</div>
             </div>
             <div id="arr-{{ uid }}" style="color:var(--muted);font-size:.75rem;margin-right:2px;">▼</div>
@@ -537,7 +538,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           // الرقم الكبير
-          ctx.font = 'bold 26px Cairo, sans-serif';
+          ctx.font = 'bold 26px Outfit, sans-serif';
           ctx.fillStyle = textColor;
           ctx.fillText(total.toFixed(3), cx, cy - 10);
           // وحدة صغيرة
@@ -661,13 +662,13 @@ async function loadChart(mode) {
       },
       scales: {
         x: {
-          ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: isDaily ? 9 : 11 }, maxRotation: isDaily ? 45 : 0 },
+          ticks: { color: '#6b7a9e', font: { family: 'Outfit', size: isDaily ? 9 : 11 }, maxRotation: isDaily ? 45 : 0 },
           grid: { display: false },
           border: { display: false }
         },
         y: {
           beginAtZero: true,
-          ticks: { color: '#6b7a9e', font: { family: 'Cairo', size: 10 }, callback: v => v.toFixed(0) },
+          ticks: { color: '#6b7a9e', font: { family: 'Outfit', size: 10 }, callback: v => v.toFixed(0) },
           grid: { color: 'rgba(148,163,184,.15)', lineWidth: 1, borderDash: [4, 4] },
           border: { display: false, dash: [4,4] }
         }
