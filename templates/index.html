@@ -469,7 +469,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
           </div>
 
           <div id="cat-{{ uid }}" style="display:none;margin-bottom:10px;padding-right:10px;border-right:3px solid {{ clr }}44;">
-            {% for e in cat_expenses %}
+            {% for e in cat_expenses|sort(attribute='date', reverse=True) %}
               <div class="tx" style="margin-bottom:6px;">
                 <div class="tx-l">
                   <div>
