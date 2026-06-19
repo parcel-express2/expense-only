@@ -336,15 +336,6 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
     </div>
   </div>
 
-  <!-- CATEGORY PILLS -->
-  {% if by_cat %}
-  <div class="cat-summary">
-    {% for key, amount in by_cat.items()|sort(attribute='1', reverse=True) %}
-      {% set cat = get_cat(key) %}
-      <div class="cat-pill">{{ cat[2] }} {{ cat[1] }}<span class="pill-amount">{{ "%.3f"|format(amount) }}</span></div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
   <!-- MAIN GRID -->
   <div class="main-grid">
