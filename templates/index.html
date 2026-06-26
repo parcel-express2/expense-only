@@ -1016,20 +1016,27 @@ async function subscribeNotifications() {
   }
 
   try {
-    const res    = await fetch('/api/vapid_public');
-    const d      = await res.json();
-    const reg    = await navigator.serviceWorker.ready;
-    const sub    = await reg.pushManager.subscribe({
+    const res = await fetch('/api/vapid_public');
+    const d   = await res.json();
+    if (!d.key) return { ok: false, msg: '❌ مفتاح الإشعارات غير موجود' };
+
+    const reg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
+    ]);
+
+    const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(d.key)
     });
+
     await fetch('/api/subscribe_push', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(sub)
     });
-    return { ok: true, msg: '✅ تم تفعيل الإشعارات' };
+    return { ok: true, msg: '✅ تم تفعيل الإشعارات بنجاح' };
   } catch(e) {
-    return { ok: false, msg: 'خطأ: ' + e.message };
+    return { ok: false, msg: '❌ ' + e.message };
   }
 }
 
