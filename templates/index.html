@@ -986,43 +986,51 @@ function openBudget() {
 </script>
 <script>
 // ── PUSH NOTIFICATIONS ──
-if ('serviceWorker' in navigator && 'PushManager' in window) {
+if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/static/sw.js').then(async reg => {
-
-    // جلب المفتاح العام
-    const res  = await fetch('/api/vapid_public');
-    const data = await res.json();
-    if (!data.key) return;
-
-    const pubKey = data.key;
-
-    // تحقق إذا مشترك مسبقاً
-    const existing = await reg.pushManager.getSubscription();
-    if (existing) {
-      // تحقق من الميزانية عند فتح التطبيق
-      fetch('/api/check_budget_notify');
-      return;
+    // تحقق من الميزانية إذا كان مشتركاً مسبقاً
+    if ('PushManager' in window) {
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) fetch('/api/check_budget_notify');
     }
-
-    // اطلب إذن الإشعارات بعد 3 ثواني
-    setTimeout(async () => {
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') return;
-
-      try {
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(pubKey)
-        });
-        await fetch('/api/subscribe_push', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify(sub)
-        });
-        fetch('/api/check_budget_notify');
-      } catch(e) { console.log('Push subscribe error:', e); }
-    }, 3000);
   });
+}
+
+async function subscribeNotifications() {
+  // التحقق من دعم الإشعارات
+  if (!('Notification' in window)) {
+    return { ok: false, msg: 'المتصفح لا يدعم الإشعارات' };
+  }
+  if (!('PushManager' in window)) {
+    // على iOS — يحتاج PWA مثبت على الهوم سكرين
+    const isStandalone = window.navigator.standalone;
+    if (!isStandalone) {
+      return { ok: false, msg: 'أضف التطبيق للهوم سكرين أولاً ثم فعّل الإشعارات' };
+    }
+    return { ok: false, msg: 'المتصفح لا يدعم الإشعارات' };
+  }
+
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    return { ok: false, msg: 'تم رفض الإشعارات — افتح إعدادات الجهاز لتفعيلها' };
+  }
+
+  try {
+    const res    = await fetch('/api/vapid_public');
+    const d      = await res.json();
+    const reg    = await navigator.serviceWorker.ready;
+    const sub    = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(d.key)
+    });
+    await fetch('/api/subscribe_push', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(sub)
+    });
+    return { ok: true, msg: '✅ تم تفعيل الإشعارات' };
+  } catch(e) {
+    return { ok: false, msg: 'خطأ: ' + e.message };
+  }
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -1098,48 +1106,55 @@ function toggleDark(on) {
 // Notifications
 async function checkNotifStatus() {
   const el = document.getElementById('notifStatus');
-  if (!('Notification' in window)) {
-    el.textContent = 'الإشعارات غير مدعومة في هذا المتصفح';
+  const isStandalone = window.navigator.standalone;
+  if (!('Notification' in window) || (!('PushManager' in window) && !isStandalone)) {
+    el.innerHTML = '📱 أضف التطبيق للهوم سكرين عشان تفعّل الإشعارات<br><small style="opacity:.7">Safari ← زر المشاركة ← إضافة للشاشة الرئيسية</small>';
+    document.getElementById('notifToggle').disabled = true;
+    return;
+  }
+  if (!('PushManager' in window)) {
+    el.textContent = '📱 افتح التطبيق من الهوم سكرين لتفعيل الإشعارات';
     return;
   }
   const perm = Notification.permission;
-  const on = perm === 'granted';
+  const reg  = await navigator.serviceWorker.ready;
+  const sub  = await reg.pushManager.getSubscription();
+  const on   = perm === 'granted' && !!sub;
   document.getElementById('notifToggle').checked = on;
   updateToggleUI('notif', on);
-  el.textContent = perm === 'granted' ? '✅ الإشعارات مفعّلة'
-                 : perm === 'denied'  ? '❌ محجوبة — افتح إعدادات المتصفح لتفعيلها'
-                 : '⏳ لم يتم الطلب بعد';
+  el.textContent = on                      ? '✅ الإشعارات مفعّلة'
+                 : perm === 'denied'       ? '❌ محجوبة — افتح إعدادات الجهاز'
+                 : !isStandalone           ? '📱 يحتاج فتح التطبيق من الهوم سكرين'
+                 :                          '⏳ اضغط التبديل لتفعيل الإشعارات';
 }
+
 async function toggleNotif(on) {
+  const el = document.getElementById('notifStatus');
   if (on) {
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted') {
-      // إعادة الاشتراك
-      const reg = await navigator.serviceWorker.ready;
-      const res  = await fetch('/api/vapid_public');
-      const d    = await res.json();
-      const sub  = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(d.key)
-      });
-      await fetch('/api/subscribe_push', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(sub)
-      });
+    el.textContent = '⏳ جاري التفعيل...';
+    const result = await subscribeNotifications();
+    el.textContent = result.msg;
+    if (!result.ok) {
+      document.getElementById('notifToggle').checked = false;
+      updateToggleUI('notif', false);
+    } else {
+      updateToggleUI('notif', true);
     }
   } else {
-    // إلغاء الاشتراك
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
-    if (sub) {
-      await fetch('/api/unsubscribe_push', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({endpoint: sub.endpoint})
-      });
-      await sub.unsubscribe();
+    if ('PushManager' in window) {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await fetch('/api/unsubscribe_push', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({endpoint: sub.endpoint})
+        });
+        await sub.unsubscribe();
+      }
     }
+    el.textContent = '🔕 تم إيقاف الإشعارات';
+    updateToggleUI('notif', false);
   }
-  checkNotifStatus();
 }
 
 // Currency
