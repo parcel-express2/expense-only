@@ -460,6 +460,81 @@ def scan_receipt():
 
 import re as _re
 from flask import send_from_directory
+import requests as _requests
+
+def ai_categorize(merchant_name):
+    """تصنيف ذكي لاسم المتجر باستخدام Gemini AI"""
+    api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('MISTRAL_API_KEY')
+    if not api_key:
+        return _fallback_categorize(merchant_name)
+
+    categories = (
+        "housing=السكن والإيجار, food=المطاعم والأكل, groceries=البقالة والسوبرماركت, "
+        "coffee=القهوة والشاي والعصائر, petrol=البترول ومحطات الوقود, "
+        "carwash=غسيل السيارة, carmaint=صيانة السيارة وقطع الغيار, "
+        "health=الصحة والمستشفيات والعيادات, pharmacy=الصيدلية والأدوية, "
+        "education=التعليم والكتب والدورات, entertainment=الترفيه والسينما والألعاب, "
+        "clothing=الملابس والأحذية والأزياء, internet=الهاتف والإنترنت والاتصالات, "
+        "subscriptions=الاشتراكات الرقمية نتفليكس سبوتيفاي, "
+        "gifts=الهدايا, travel=السفر والفنادق والطيران, "
+        "personal=العناية الشخصية الصالون الحلاقة, other=أخرى"
+    )
+
+    prompt = (
+        f"Merchant name: '{merchant_name}'\n"
+        f"Categories: {categories}\n"
+        f"Reply with ONLY the category key (e.g. food, coffee, petrol). No explanation."
+    )
+
+    try:
+        # جرّب Gemini أولاً
+        if os.environ.get('GEMINI_API_KEY'):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={os.environ['GEMINI_API_KEY']}"
+            resp = _requests.post(url, json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"maxOutputTokens": 10, "temperature": 0}
+            }, timeout=5)
+            if resp.ok:
+                text = resp.json()['candidates'][0]['content']['parts'][0]['text'].strip().lower()
+                cat = _re.sub(r'[^a-z]', '', text)
+                valid = [c[0] for c in CATEGORIES]
+                return cat if cat in valid else 'other'
+
+        # Mistral كبديل
+        if os.environ.get('MISTRAL_API_KEY'):
+            resp = _requests.post("https://api.mistral.ai/v1/chat/completions", json={
+                "model": "mistral-small-latest",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 10, "temperature": 0
+            }, headers={"Authorization": f"Bearer {os.environ['MISTRAL_API_KEY']}"}, timeout=5)
+            if resp.ok:
+                text = resp.json()['choices'][0]['message']['content'].strip().lower()
+                cat = _re.sub(r'[^a-z]', '', text)
+                valid = [c[0] for c in CATEGORIES]
+                return cat if cat in valid else 'other'
+
+    except Exception:
+        pass
+
+    return _fallback_categorize(merchant_name)
+
+
+def _fallback_categorize(name):
+    """تصنيف احتياطي بالكلمات المفتاحية"""
+    lower = name.lower()
+    if any(w in lower for w in ['coffee', 'cafe', 'tea', 'juice', 'قهوة', 'شاي']):
+        return 'coffee'
+    if any(w in lower for w in ['restaurant', 'مطعم', 'burger', 'pizza', 'grill', 'shawarma']):
+        return 'food'
+    if any(w in lower for w in ['petrol', 'fuel', 'station', 'بترول', 'وقود']):
+        return 'petrol'
+    if any(w in lower for w in ['pharmacy', 'صيدلية', 'drug']):
+        return 'pharmacy'
+    if any(w in lower for w in ['lulu', 'carrefour', 'hypermarket', 'supermarket', 'بقالة']):
+        return 'groceries'
+    if any(w in lower for w in ['hospital', 'clinic', 'medical', 'مستشفى', 'عيادة']):
+        return 'health'
+    return 'other'
 
 @app.route('/sw.js')
 def sw():
@@ -505,29 +580,12 @@ def sms_webhook():
     if not amount or amount <= 0:
         return jsonify({'error': 'could not parse amount', 'message': message_body}), 422
 
-    # تصنيف تلقائي
-    lower = message_body.lower()
-    if any(w in lower for w in ['coffee', 'cafe', 'tea', 'juice', 'قهوة', 'شاي', 'عصير']):
-        cat = 'coffee'
-    elif any(w in lower for w in ['restaurant', 'مطعم', 'burger', 'pizza', 'shawarma', 'grill']):
-        cat = 'food'
-    elif any(w in lower for w in ['petrol', 'fuel', 'station', 'بترول', 'وقود', 'محطة']):
-        cat = 'petrol'
-    elif any(w in lower for w in ['pharmacy', 'medical', 'hospital', 'clinic', 'صيدلية', 'طبي', 'مستشفى']):
-        cat = 'pharmacy'
-    elif any(w in lower for w in ['supermarket', 'lulu', 'carrefour', 'hypermarket', 'market', 'بقالة', 'سوبرماركت']):
-        cat = 'groceries'
-    else:
-        cat = 'other'
-
-    # استخراج اسم المتجر من رسالة بنك مسقط
-    # صيغة 1: "في 901279-AL JAZEERA TEA AL K بتاريخ"
-    # صيغة 2: "في AL BURG AL BRONZE TRAD AL KHABOURA OM بتاريخ"
+    # استخراج اسم المتجر أولاً
     desc_match = _re.search(r'في\s+(?:[\d\w]+-)?(.+?)\s+بتاريخ', message_body)
-    if desc_match:
-        description = desc_match.group(1).strip()
-    else:
-        description = 'بنك مسقط - دفعة تلقائية'
+    description = desc_match.group(1).strip() if desc_match else 'بنك مسقط - دفعة تلقائية'
+
+    # تصنيف ذكي بالذكاء الاصطناعي
+    cat = ai_categorize(description)
 
     expense = Expense(
         user_id     = user.id,
