@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-import os
+import os, json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'expense-only-secret-2024'
@@ -63,6 +63,14 @@ class Expense(db.Model):
         if self.date:
             self.month = self.date.month
             self.year  = self.date.year
+
+
+class PushSub(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    endpoint   = db.Column(db.Text, nullable=False, unique=True)
+    sub_json   = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Budget(db.Model):
@@ -531,6 +539,90 @@ def sms_webhook():
             'description': description
         }
     }), 200
+
+
+VAPID_PRIVATE = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_PUBLIC  = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_EMAIL   = 'mailto:admin@masarify.app'
+
+
+@app.route('/api/vapid_public')
+def vapid_public():
+    return jsonify({'key': VAPID_PUBLIC})
+
+
+@app.route('/api/subscribe_push', methods=['POST'])
+@login_required
+def subscribe_push():
+    sub = request.get_json()
+    if not sub or 'endpoint' not in sub:
+        return jsonify({'error': 'invalid'}), 400
+    existing = PushSub.query.filter_by(endpoint=sub['endpoint']).first()
+    if existing:
+        existing.sub_json = json.dumps(sub)
+        existing.user_id  = session['user_id']
+    else:
+        db.session.add(PushSub(
+            user_id  = session['user_id'],
+            endpoint = sub['endpoint'],
+            sub_json = json.dumps(sub)
+        ))
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/unsubscribe_push', methods=['POST'])
+@login_required
+def unsubscribe_push():
+    data = request.get_json() or {}
+    PushSub.query.filter_by(user_id=session['user_id'], endpoint=data.get('endpoint','')).delete()
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+def send_push(user_id, title, body):
+    """إرسال إشعار لجميع أجهزة المستخدم"""
+    if not VAPID_PRIVATE or not VAPID_PUBLIC:
+        return
+    try:
+        from pywebpush import webpush, WebPushException
+    except ImportError:
+        return
+    subs = PushSub.query.filter_by(user_id=user_id).all()
+    for s in subs:
+        try:
+            webpush(
+                subscription_info   = json.loads(s.sub_json),
+                data                = json.dumps({'title': title, 'body': body}),
+                vapid_private_key   = VAPID_PRIVATE,
+                vapid_claims        = {'sub': VAPID_EMAIL}
+            )
+        except Exception:
+            db.session.delete(s)
+    db.session.commit()
+
+
+@app.route('/api/check_budget_notify')
+@login_required
+def check_budget_notify():
+    """يُستدعى من الـ frontend عند فتح التطبيق للتحقق من الميزانية"""
+    user_id = session['user_id']
+    today   = date.today()
+    budget  = Budget.query.filter_by(user_id=user_id, month=today.month, year=today.year).first()
+    if not budget:
+        return jsonify({'ok': True, 'no_budget': True})
+    total = db.session.query(db.func.sum(Expense.amount))\
+              .filter_by(user_id=user_id, month=today.month, year=today.year).scalar() or 0
+    pct = total / budget.amount * 100
+    if pct >= 100:
+        send_push(user_id, '⚠️ تجاوزت الميزانية!',
+                  f'صرفت {total:.3f} ر.ع من {budget.amount:.3f} ر.ع')
+        return jsonify({'alert': 'exceeded', 'pct': round(pct,1)})
+    elif pct >= 90:
+        send_push(user_id, '🔔 اقتربت من الميزانية',
+                  f'استهلكت {pct:.0f}% من ميزانية الشهر')
+        return jsonify({'alert': 'warning', 'pct': round(pct,1)})
+    return jsonify({'ok': True, 'pct': round(pct,1)})
 
 
 if __name__ == '__main__':

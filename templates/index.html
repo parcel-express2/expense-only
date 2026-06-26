@@ -885,8 +885,51 @@ function openBudget() {
 }
 </script>
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/sw.js');
+// ── PUSH NOTIFICATIONS ──
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  navigator.serviceWorker.register('/static/sw.js').then(async reg => {
+
+    // جلب المفتاح العام
+    const res  = await fetch('/api/vapid_public');
+    const data = await res.json();
+    if (!data.key) return;
+
+    const pubKey = data.key;
+
+    // تحقق إذا مشترك مسبقاً
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) {
+      // تحقق من الميزانية عند فتح التطبيق
+      fetch('/api/check_budget_notify');
+      return;
+    }
+
+    // اطلب إذن الإشعارات بعد 3 ثواني
+    setTimeout(async () => {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+
+      try {
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(pubKey)
+        });
+        await fetch('/api/subscribe_push', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(sub)
+        });
+        fetch('/api/check_budget_notify');
+      } catch(e) { console.log('Push subscribe error:', e); }
+    }, 3000);
+  });
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw     = window.atob(base64);
+  return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
 }
 function toggleCat(id) {
   const el = document.getElementById(id);

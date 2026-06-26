@@ -6,3 +6,4 @@ Pillow
 pillow-heif
 openpyxl
 psycopg2-binary
+pywebpush
