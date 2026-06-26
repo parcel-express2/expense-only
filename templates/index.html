@@ -34,8 +34,18 @@
   --radius: 20px;
   --radius-sm: 14px;
 }
+/* DARK MODE */
+body.dark {
+  --bg: #0f1117;
+  --surface: #1a1d2e;
+  --surface2: #222639;
+  --surface3: #2a2f45;
+  --border: rgba(255,255,255,.08);
+  --text: #f1f5f9;
+  --muted: #6b7a9e;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .3s, color .3s; }
 
 /* HEADER */
 header {
@@ -258,9 +268,99 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
   </div>
   <div class="hdr-right">
     <div class="user-chip"><span class="dot-online"></span>{{ user_name }}</div>
-<a href="/logout" class="btn-out">خروج</a>
+    <button onclick="openSettings()" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--surface2);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;">⚙️</button>
+    <a href="/logout" class="btn-out">خروج</a>
   </div>
 </header>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal-ov" style="display:none;align-items:center;">
+  <div class="modal" style="max-width:420px;width:92%;padding:0;overflow:hidden;border-radius:24px;">
+
+    <!-- Header -->
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:1rem;font-weight:900;">⚙️ الإعدادات</div>
+      <button onclick="closeSettings()" style="background:var(--surface2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;">✕</button>
+    </div>
+
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;max-height:75vh;overflow-y:auto;">
+
+      <!-- Dark Mode -->
+      <div style="background:var(--surface2);border-radius:16px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:.9rem;font-weight:700;">🌙 الوضع الليلي</div>
+            <div style="font-size:.75rem;color:var(--muted);margin-top:2px;">تغيير مظهر التطبيق</div>
+          </div>
+          <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+            <input type="checkbox" id="darkToggle" onchange="toggleDark(this.checked)" style="opacity:0;width:0;height:0;position:absolute;">
+            <span id="darkTrack" style="position:absolute;inset:0;border-radius:26px;background:var(--surface3);transition:.3s;"></span>
+            <span id="darkThumb" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:white;transition:.3s;box-shadow:0 2px 4px rgba(0,0,0,.2);"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div style="background:var(--surface2);border-radius:16px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:.9rem;font-weight:700;">🔔 الإشعارات</div>
+            <div style="font-size:.75rem;color:var(--muted);margin-top:2px;">تنبيه عند تجاوز الميزانية</div>
+          </div>
+          <label style="position:relative;width:48px;height:26px;cursor:pointer;">
+            <input type="checkbox" id="notifToggle" onchange="toggleNotif(this.checked)" style="opacity:0;width:0;height:0;position:absolute;">
+            <span id="notifTrack" style="position:absolute;inset:0;border-radius:26px;background:var(--surface3);transition:.3s;"></span>
+            <span id="notifThumb" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:white;transition:.3s;box-shadow:0 2px 4px rgba(0,0,0,.2);"></span>
+          </label>
+        </div>
+        <div id="notifStatus" style="font-size:.72rem;color:var(--muted);margin-top:8px;"></div>
+      </div>
+
+      <!-- Currency -->
+      <div style="background:var(--surface2);border-radius:16px;padding:16px;">
+        <div style="font-size:.9rem;font-weight:700;margin-bottom:10px;">💰 العملة</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          {% for cur in [('ر.ع','OMR'),('$','USD'),('€','EUR'),('﷼','SAR')] %}
+          <button onclick="setCurrency('{{ cur[0] }}')" id="cur-{{ cur[1] }}"
+            style="padding:8px 16px;border-radius:10px;border:2px solid var(--border);background:var(--surface);font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;">
+            {{ cur[0] }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Budget -->
+      <div style="background:var(--surface2);border-radius:16px;padding:16px;">
+        <div style="font-size:.9rem;font-weight:700;margin-bottom:10px;">🎯 الميزانية الشهرية</div>
+        <form method="POST" action="/set_budget" style="display:flex;gap:8px;">
+          <input type="hidden" name="month" value="{{ current_month }}">
+          <input type="hidden" name="year" value="{{ current_year }}">
+          <input type="number" name="budget_amount" step="0.001" min="1"
+            placeholder="{{ '%.3f'|format(budget_amount) if budget_amount else '0.000' }}"
+            style="flex:1;padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.9rem;color:var(--text);">
+          <button type="submit" style="padding:10px 18px;border-radius:12px;border:none;background:var(--accent);color:white;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;">حفظ</button>
+        </form>
+        {% if budget_amount %}
+        <div style="font-size:.75rem;color:var(--muted);margin-top:6px;">الميزانية الحالية: <span style="font-family:'Outfit';color:var(--accent);font-weight:700;">{{ '%.3f'|format(budget_amount) }}</span> ر.ع</div>
+        {% endif %}
+      </div>
+
+      <!-- Change PIN -->
+      <div style="background:var(--surface2);border-radius:16px;padding:16px;">
+        <div style="font-size:.9rem;font-weight:700;margin-bottom:10px;">🔑 تغيير الرمز السري</div>
+        <form onsubmit="changePin(event)" style="display:flex;flex-direction:column;gap:8px;">
+          <input type="password" id="oldPin" placeholder="الرمز الحالي" maxlength="4"
+            style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.9rem;color:var(--text);text-align:center;letter-spacing:6px;">
+          <input type="password" id="newPin" placeholder="الرمز الجديد" maxlength="4"
+            style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.9rem;color:var(--text);text-align:center;letter-spacing:6px;">
+          <button type="submit" style="padding:10px;border-radius:12px;border:none;background:var(--accent);color:white;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;">تغيير الرمز</button>
+          <div id="pinMsg" style="font-size:.78rem;text-align:center;"></div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <!-- MONTH BAR -->
 <form method="GET" action="/">
@@ -951,6 +1051,128 @@ function toggleCat(id) {
 function toggleReport() {
   const p = document.getElementById('reportPanel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── SETTINGS ──
+function openSettings() {
+  document.getElementById('settingsModal').style.display = 'flex';
+  // تحديث حالة الوضع الليلي
+  const dark = document.body.classList.contains('dark');
+  document.getElementById('darkToggle').checked = dark;
+  updateToggleUI('dark', dark);
+  // تحديث حالة الإشعارات
+  checkNotifStatus();
+  // تحديث العملة
+  const cur = localStorage.getItem('currency') || 'ر.ع';
+  document.querySelectorAll('[id^="cur-"]').forEach(b => {
+    b.style.background = b.textContent.trim() === cur ? 'var(--accent)' : 'var(--surface)';
+    b.style.color = b.textContent.trim() === cur ? 'white' : 'var(--text)';
+    b.style.borderColor = b.textContent.trim() === cur ? 'var(--accent)' : 'var(--border)';
+  });
+}
+function closeSettings() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+
+function updateToggleUI(type, on) {
+  const track = document.getElementById(type + 'Track');
+  const thumb = document.getElementById(type + 'Thumb');
+  if (!track) return;
+  track.style.background = on ? 'var(--accent)' : 'var(--surface3)';
+  thumb.style.right = on ? 'auto' : '3px';
+  thumb.style.left  = on ? '3px'  : 'auto';
+}
+
+// Dark Mode
+function toggleDark(on) {
+  document.body.classList.toggle('dark', on);
+  localStorage.setItem('darkMode', on ? '1' : '0');
+  updateToggleUI('dark', on);
+}
+(function(){
+  if (localStorage.getItem('darkMode') === '1') {
+    document.body.classList.add('dark');
+  }
+})();
+
+// Notifications
+async function checkNotifStatus() {
+  const el = document.getElementById('notifStatus');
+  if (!('Notification' in window)) {
+    el.textContent = 'الإشعارات غير مدعومة في هذا المتصفح';
+    return;
+  }
+  const perm = Notification.permission;
+  const on = perm === 'granted';
+  document.getElementById('notifToggle').checked = on;
+  updateToggleUI('notif', on);
+  el.textContent = perm === 'granted' ? '✅ الإشعارات مفعّلة'
+                 : perm === 'denied'  ? '❌ محجوبة — افتح إعدادات المتصفح لتفعيلها'
+                 : '⏳ لم يتم الطلب بعد';
+}
+async function toggleNotif(on) {
+  if (on) {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      // إعادة الاشتراك
+      const reg = await navigator.serviceWorker.ready;
+      const res  = await fetch('/api/vapid_public');
+      const d    = await res.json();
+      const sub  = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(d.key)
+      });
+      await fetch('/api/subscribe_push', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(sub)
+      });
+    }
+  } else {
+    // إلغاء الاشتراك
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      await fetch('/api/unsubscribe_push', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({endpoint: sub.endpoint})
+      });
+      await sub.unsubscribe();
+    }
+  }
+  checkNotifStatus();
+}
+
+// Currency
+function setCurrency(cur) {
+  localStorage.setItem('currency', cur);
+  openSettings();
+}
+
+// Change PIN
+async function changePin(e) {
+  e.preventDefault();
+  const oldPin = document.getElementById('oldPin').value;
+  const newPin = document.getElementById('newPin').value;
+  const msg = document.getElementById('pinMsg');
+  if (newPin.length !== 4 || !/^\d+$/.test(newPin)) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'الرمز الجديد يجب أن يكون 4 أرقام';
+    return;
+  }
+  const res = await fetch('/api/change_pin', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({old_pin: oldPin, new_pin: newPin})
+  });
+  const data = await res.json();
+  if (data.ok) {
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✅ تم تغيير الرمز بنجاح';
+    document.getElementById('oldPin').value = '';
+    document.getElementById('newPin').value = '';
+  } else {
+    msg.style.color = 'var(--red)';
+    msg.textContent = '❌ ' + (data.error || 'خطأ');
+  }
 }
 // تاريخ اليوم تلقائياً
 const dateField = document.getElementById('expenseDate');

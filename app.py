@@ -541,6 +541,22 @@ def sms_webhook():
     }), 200
 
 
+@app.route('/api/change_pin', methods=['POST'])
+@login_required
+def change_pin():
+    data    = request.get_json() or {}
+    old_pin = str(data.get('old_pin', ''))
+    new_pin = str(data.get('new_pin', ''))
+    user    = User.query.get(session['user_id'])
+    if not check_password_hash(user.pin_hash, old_pin):
+        return jsonify({'error': 'الرمز الحالي غير صحيح'}), 400
+    if len(new_pin) != 4 or not new_pin.isdigit():
+        return jsonify({'error': 'الرمز الجديد يجب أن يكون 4 أرقام'}), 400
+    user.pin_hash = generate_password_hash(new_pin)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
 VAPID_PRIVATE = os.environ.get('VAPID_PRIVATE_KEY', '')
 VAPID_PUBLIC  = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_EMAIL   = 'mailto:admin@masarify.app'
