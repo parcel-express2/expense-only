@@ -987,7 +987,7 @@ function openBudget() {
 <script>
 // ── PUSH NOTIFICATIONS ──
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/sw.js').then(async reg => {
+  navigator.serviceWorker.register('/sw.js', {scope: '/'}).then(async reg => {
     // تحقق من الميزانية إذا كان مشتركاً مسبقاً
     if ('PushManager' in window) {
       const existing = await reg.pushManager.getSubscription();

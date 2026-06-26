@@ -459,6 +459,14 @@ def scan_receipt():
 
 
 import re as _re
+from flask import send_from_directory
+
+@app.route('/sw.js')
+def sw():
+    resp = send_from_directory('static', 'sw.js')
+    resp.headers['Service-Worker-Allowed'] = '/'
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
 
 @app.route('/sms_webhook', methods=['POST'])
 def sms_webhook():
