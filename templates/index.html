@@ -278,8 +278,82 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: .73r
     </select>
     <input class="search-input" type="text" name="q" placeholder="🔍 بحث..." value="{{ search }}">
     <a href="/export_excel?month={{ current_month }}&year={{ current_year }}" class="btn-export">⬇️ Excel</a>
+    <button type="button" onclick="toggleReport()" class="btn-export" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);color:white;border:none;cursor:pointer;">📊 التقرير</button>
   </div>
 </form>
+
+<!-- REPORT PANEL -->
+<div id="reportPanel" style="display:none;max-width:1100px;margin:0 auto 16px;padding:0 16px;">
+  <div class="panel" style="padding:24px;">
+    <div style="font-size:.9rem;font-weight:800;color:var(--accent);margin-bottom:20px;">📊 ملخص شهر {{ arabic_months[current_month] }} {{ current_year }}</div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px;">
+
+      <!-- إجمالي الشهر -->
+      <div style="background:var(--surface2);border-radius:16px;padding:18px;text-align:center;">
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;">💸 إجمالي الشهر</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:900;color:var(--red);">{{ "%.3f"|format(all_total) }}</div>
+        <div style="font-size:.72rem;color:var(--muted);">ر.ع</div>
+      </div>
+
+      <!-- مقارنة بالشهر السابق -->
+      <div style="background:var(--surface2);border-radius:16px;padding:18px;text-align:center;">
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;">📈 مقارنة بالشهر السابق</div>
+        {% if diff_pct is not none %}
+          <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:900;color:{% if diff_pct > 0 %}var(--red){% else %}var(--green){% endif %};">
+            {{ '+' if diff_pct > 0 else '' }}{{ diff_pct }}%
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);">{{ 'زيادة' if diff_pct > 0 else 'توفير' }} عن الشهر السابق</div>
+        {% else %}
+          <div style="font-size:1rem;color:var(--muted);padding-top:8px;">لا توجد بيانات</div>
+        {% endif %}
+      </div>
+
+      <!-- متوسط الإنفاق اليومي -->
+      <div style="background:var(--surface2);border-radius:16px;padding:18px;text-align:center;">
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;">📆 متوسط اليوم</div>
+        {% set days_passed = expenses|map(attribute='date')|list|unique|list|length %}
+        {% set daily_avg = (all_total / days_passed) if days_passed > 0 else 0 %}
+        <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:900;color:var(--accent);">{{ "%.3f"|format(daily_avg) }}</div>
+        <div style="font-size:.72rem;color:var(--muted);">ر.ع / يوم ({{ days_passed }} يوم)</div>
+      </div>
+
+      <!-- أعلى فئة -->
+      {% if by_cat %}
+        {% set top_cat_key = by_cat|dictsort(by='value',reverse=True)|first %}
+        {% set top_cat = get_cat(top_cat_key[0]) %}
+        <div style="background:var(--surface2);border-radius:16px;padding:18px;text-align:center;">
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;">🏆 أعلى فئة إنفاقاً</div>
+          <div style="font-size:2rem;">{{ top_cat[2] }}</div>
+          <div style="font-size:.9rem;font-weight:800;color:var(--text);margin-top:4px;">{{ top_cat[1] }}</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:.85rem;color:var(--red);font-weight:700;">{{ "%.3f"|format(top_cat_key[1]) }} ر.ع</div>
+        </div>
+      {% endif %}
+
+    </div>
+
+    <!-- شريط الفئات -->
+    {% if all_total > 0 %}
+    <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:10px;">توزيع الإنفاق حسب الفئة</div>
+    {% set colors = ['#4f6ef7','#f43f5e','#f59e0b','#10b981','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'] %}
+    {% for cat_key, cat_amt in by_cat|dictsort(by='value',reverse=True) %}
+      {% set cat = get_cat(cat_key) %}
+      {% set pct = (cat_amt / all_total * 100)|round(1) %}
+      {% set clr = colors[loop.index0 % 10] %}
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:.8rem;font-weight:700;color:var(--text);">{{ cat[2] }} {{ cat[1] }}</span>
+          <span style="font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:700;color:{{ clr }};">{{ "%.3f"|format(cat_amt) }} ر.ع &nbsp;·&nbsp; {{ pct }}%</span>
+        </div>
+        <div style="height:8px;background:var(--surface3);border-radius:8px;overflow:hidden;">
+          <div style="height:100%;width:{{ pct }}%;background:{{ clr }};border-radius:8px;transition:width .6s;"></div>
+        </div>
+      </div>
+    {% endfor %}
+    {% endif %}
+
+  </div>
+</div>
 
 <!-- FLASH -->
 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -830,6 +904,10 @@ function toggleCat(id) {
     el.style.display = 'block';
     document.getElementById('arr-' + idx).textContent = '▲';
   }
+}
+function toggleReport() {
+  const p = document.getElementById('reportPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
 }
 // تاريخ اليوم تلقائياً
 const dateField = document.getElementById('expenseDate');
